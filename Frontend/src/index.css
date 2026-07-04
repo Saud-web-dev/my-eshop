@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+
+.Syne {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+}
+
+.outfit {
+  font-family: "outfit", sans-serif;
+  font-weight: 400;
+}
+
+.typewriter {
+  display: inline-block;
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: max-width 0.8s steps(20, end);
+}
+
+.group:hover .typewriter {
+  max-width: 200px;
+}
