@@ -56,8 +56,7 @@ const Signup = () => {
         localStorage.removeItem('userId');
         localStorage.removeItem('userName');
         localStorage.removeItem('userEmail');
-        
-        console.log('✅ Old localStorage data cleared on signup page load');
+
     }, []);
 
     const handleSubmit = async (e) => {
@@ -82,12 +81,6 @@ const Signup = () => {
                 localStorage.setItem('userId', userData._id);
                 localStorage.setItem('userName', userData.name);
                 localStorage.setItem('userEmail', userData.email);
-                
-                console.log('✅ User data saved to localStorage:', {
-                    user: userData,
-                    token: token,
-                    role: userData.role
-                });
                 
                 setPopup({ type: 'success', message: res.data.msg });
                 setTimeout(() => {

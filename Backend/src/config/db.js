@@ -6,10 +6,13 @@ dotenv.config();
 const connectDB = async () => {
     try {
         await mongoose.connect(process.env.MONGO_URL || process.env.MONGO_ONLINE_URL);
-        console.log("MongoDB Connected");
+         console.log('MongoDB Connected');
+        // Drop old indexes
+     
     } catch (err) {
         console.error(err.message);
         process.exit(1);
+        
     }
 }
 

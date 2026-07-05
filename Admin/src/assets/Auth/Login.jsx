@@ -16,12 +16,12 @@ const Popup = ({ type, message, onClose }) => {
     const isError = type === 'error'
 
     return (
-        <div className={`fixed top-6 right-6 z-[9999] flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-2xl backdrop-blur-md transition-all duration-300 ${
+        <div className={`fixed top-6 right-6 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-2xl backdrop-blur-md transition-all duration-300 ${
             isError 
                 ? 'bg-red-950/90 border border-red-500/30 text-red-300' 
                 : 'bg-emerald-950/90 border border-emerald-400/30 text-emerald-300'
         }`}>
-            <span className={`text-2xl flex-shrink-0 ${isError ? 'text-red-400' : 'text-emerald-400'}`}>
+            <span className={`text-2xl shrink-0 ${isError ? 'text-red-400' : 'text-emerald-400'}`}>
                 {isError ? <IoCloseCircle /> : <IoCheckmarkCircle />}
             </span>
             <p className="text-sm font-light tracking-wide m-0 flex-1">{message}</p>
@@ -56,8 +56,7 @@ const Login = () => {
         localStorage.removeItem('userId');
         localStorage.removeItem('userName');
         localStorage.removeItem('userEmail');
-        
-        console.log('✅ Old localStorage data cleared on login page load');
+
     }, []);
 
    const handleSubmit = async (e) => {
@@ -82,12 +81,6 @@ const Login = () => {
             localStorage.setItem('userName', userData.name);
             localStorage.setItem('userEmail', userData.email);
             localStorage.setItem('userId', userData._id);
-            
-            console.log('✅ All data saved to localStorage:', {
-                user: userData,
-                token: token,
-                role: userData.role
-            });
             
             setPopup({ type: 'success', message: res.data.msg });
             setTimeout(() => {
@@ -114,9 +107,9 @@ const Login = () => {
         <>
             {popup && <Popup type={popup.type} message={popup.message} onClose={() => setPopup(null)} />}
 
-            <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950/30 to-slate-900">
+            <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden bg-linear-to-br from-slate-900 via-indigo-950/30 to-slate-900">
                 {/* Animated Background Orbs */}
-                <div className="absolute w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px] top-[-200px] right-[-100px] animate-float" />
+                <div className="absolute w-125 h-125 bg-indigo-500/10 rounded-full blur-[120px] -top-50 -right-50] animate-float" />
                 <div className="absolute w-[400px] h-[400px] bg-purple-500/10 rounded-full blur-[120px] bottom-[-150px] left-[-100px] animate-float-delayed" />
                 <div className="absolute w-[300px] h-[300px] bg-blue-500/10 rounded-full blur-[100px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse-slow" />
 
@@ -128,14 +121,14 @@ const Login = () => {
                             {/* Header */}
                             <div className="text-center mb-8">
                                 <div className="flex justify-center mb-3">
-                                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-3xl shadow-lg shadow-indigo-500/20">
+                                    <div className="w-16 h-16 rounded-full bg-linear-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-3xl shadow-lg shadow-indigo-500/20">
                                         <RiAccountCircle2Fill />
                                     </div>
                                 </div>
                                 <h1 className="text-3xl md:text-4xl font-light text-white tracking-wide">
                                     Welcome Back
                                 </h1>
-                                <div className="w-12 h-0.5 bg-gradient-to-r from-indigo-400 to-purple-400 mx-auto mt-3" />
+                                <div className="w-12 h-0.5 bg-linear-to-r from-indigo-400 to-purple-400 mx-auto mt-3" />
                                 <p className="text-white/40 text-sm mt-3 font-light tracking-wide">
                                     Sign in to your account
                                 </p>
@@ -188,7 +181,7 @@ const Login = () => {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className={`w-full py-3.5 px-6 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-lg shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-300 flex items-center justify-center gap-2 group ${
+                                    className={`w-full py-3.5 px-6 bg-linear-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-lg shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-300 flex items-center justify-center gap-2 group ${
                                         loading ? 'opacity-70 cursor-not-allowed' : 'hover:from-indigo-600 hover:to-purple-600'
                                     }`}
                                 >
@@ -227,7 +220,7 @@ const Login = () => {
                     </div>
 
                     {/* RIGHT: Visual Panel */}
-                    <div className="hidden md:flex w-1/2 flex-col items-center justify-center p-12 relative bg-gradient-to-br from-indigo-900/30 via-purple-900/20 to-slate-900/50 overflow-hidden">
+                    <div className="hidden md:flex w-1/2 flex-col items-center justify-center p-12 relative bg-linear-to-br from-indigo-900/30 via-purple-900/20 to-slate-900/50 overflow-hidden">
                         {/* Decorative Elements */}
                         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-20" />
                         
@@ -239,7 +232,7 @@ const Login = () => {
                         {/* Content */}
                         <div className="relative z-10 text-center">
                             <div className="mb-6">
-                                <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center">
+                                <div className="w-20 h-20 mx-auto rounded-2xl bg-linear-to-br from-indigo-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center">
                                     <svg className="w-10 h-10 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                     </svg>
@@ -249,7 +242,7 @@ const Login = () => {
                             <h2 className="text-2xl font-light text-white tracking-wider mb-2">
                                 Your Management System
                             </h2>
-                            <div className="w-8 h-0.5 bg-gradient-to-r from-indigo-400 to-purple-400 mx-auto mb-3" />
+                            <div className="w-8 h-0.5 bg-linear-to-r from-indigo-400 to-purple-400 mx-auto mb-3" />
                             <p className="text-white/40 text-sm font-light tracking-wide max-w-xs mx-auto">
                                 Secure access to your admin dashboard
                             </p>
