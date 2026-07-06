@@ -9,7 +9,7 @@ import {
   FaBox,
   FaShoppingCart,
   FaUsers,
-  FaChartLine,
+  FaChartLine, 
   FaCog,
   FaSignOutAlt,
 } from "react-icons/fa";
@@ -22,7 +22,18 @@ const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const navigate = useNavigate();
+
+  // Check if mobile
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const menuSections = [
     {
@@ -66,13 +77,8 @@ const Sidebar = () => {
       ],
     },
     {
-      label: "Reports",
+      label: "Setting",
       items: [
-        {
-          name: "Reports",
-          path: "/dashboard/reports",
-          icon: <RiCustomerService2Line />
-        },
         {
           name: "Settings",
           path: "/dashboard/settings",
@@ -251,16 +257,22 @@ const Sidebar = () => {
     }
   };
 
+  // Calculate margin based on sidebar state
+  const getMarginLeft = () => {
+    if (isMobile) return '72px';
+    return isCollapsed ? '72px' : '240px';
+  };
+
   return (
-    <div className="flex min-h-screen font-['Montserrat'] bg-gradient-to-br from-[#06080f] via-[#0c1220] to-[#080b18] overflow-hidden">
+    <div className="flex min-h-screen font-['Montserrat'] bg-gradient-to-br from-[#06080f] via-[#0c1220] to-[#080b18]">
       {/* ── Sidebar ── */}
       <motion.aside
         variants={sidebarVariants}
         initial="expanded"
         animate={isCollapsed ? "collapsed" : "expanded"}
-        className="relative flex flex-col h-screen overflow-hidden border-r border-[rgba(99,102,241,0.12)] bg-gradient-to-b from-[rgba(10,15,44,0.98)] via-[rgba(17,24,56,0.98)] to-[rgba(8,11,24,0.98)] backdrop-blur-[20px] shadow-[4px_0_30px_rgba(0,0,0,0.3)] z-40 flex-shrink-0"
+        className="fixed left-0 top-0 h-screen flex flex-col border-r border-[rgba(99,102,241,0.12)] bg-gradient-to-b from-[rgba(10,15,44,0.98)] via-[rgba(17,24,56,0.98)] to-[rgba(8,11,24,0.98)] backdrop-blur-[20px] shadow-[4px_0_30px_rgba(0,0,0,0.3)] z-40"
       >
-        {/* ── Logo ── */}
+        {/* ── Logo (Fixed Top) ── */}
         <Link 
           to="/dashboard" 
           className={`block border-b border-[rgba(99,102,241,0.08)] flex-shrink-0 transition-padding duration-300 ${
@@ -289,7 +301,7 @@ const Sidebar = () => {
           </div>
         </Link>
 
-        {/* ── Navigation ── */}
+        {/* ── Navigation (Scrollable Middle) ── */}
         <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3 scrollbar-none">
           {menuSections.map((section, si) => (
             <div key={si} className={`transition-padding duration-300 ${
@@ -367,62 +379,68 @@ const Sidebar = () => {
           ))}
         </nav>
 
-        {/* ── User Card ── */}
-        {loading ? (
-          <div className="flex items-center justify-center py-2 flex-shrink-0">
-            <div className="w-5 h-5 border-2 border-[rgba(99,102,241,0.1)] border-t-[#6366f1] rounded-full animate-spin" />
-          </div>
-        ) : (
-          <div className={`mx-3 my-2 p-2.5 flex items-center gap-3 bg-[rgba(255,255,255,0.03)] rounded-xl border border-[rgba(99,102,241,0.08)] backdrop-blur-[10px] flex-shrink-0 min-w-0 transition-all duration-300 ${
-            isCollapsed ? 'justify-center p-2.5 border-none bg-transparent' : ''
-          }`}>
-            <div className="w-[38px] h-[38px] flex items-center justify-center rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] text-white text-sm font-bold flex-shrink-0 border-2 border-[rgba(99,102,241,0.3)]">
-              {user ? getInitials(user.name) : "U"}
+        {/* ── Bottom Section (Fixed Bottom) ── */}
+        <div className="flex-shrink-0 border-t border-[rgba(99,102,241,0.08)] pt-2">
+          {/* ── User Card ── */}
+          {loading ? (
+            <div className="flex items-center justify-center py-2">
+              <div className="w-5 h-5 border-2 border-[rgba(99,102,241,0.1)] border-t-[#6366f1] rounded-full animate-spin" />
             </div>
-            <motion.div
-              variants={userInfoVariants}
+          ) : (
+            <div className={`mx-3 my-2 p-2.5 flex items-center gap-3 bg-[rgba(255,255,255,0.03)] rounded-xl border border-[rgba(99,102,241,0.08)] backdrop-blur-[10px] min-w-0 transition-all duration-300 ${
+              isCollapsed ? 'justify-center p-2.5 border-none bg-transparent' : ''
+            }`}>
+              <div className="w-[38px] h-[38px] flex items-center justify-center rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] text-white text-sm font-bold flex-shrink-0 border-2 border-[rgba(99,102,241,0.3)]">
+                {user ? getInitials(user.name) : "U"}
+              </div>
+              <motion.div
+                variants={userInfoVariants}
+                initial="visible"
+                animate={isCollapsed ? "hidden" : "visible"}
+                className="min-w-0 flex-1 overflow-hidden"
+              >
+                <div className="text-xs font-medium text-[#e2e8f0] whitespace-nowrap overflow-hidden text-ellipsis">
+                  {getDisplayName()}
+                </div>
+                <div className="text-[9px] text-[#8892b0] whitespace-nowrap overflow-hidden text-ellipsis mt-0.5">
+                  {getUserEmail()}
+                </div>
+                <div className="text-[8px] text-[#6366f1] font-medium tracking-[0.5px] mt-0.5 opacity-80 uppercase">
+                  {getRoleDisplay()}
+                </div>
+              </motion.div>
+            </div>
+          )}
+
+          {/* ── Logout ── */}
+          <button
+            className={`flex items-center gap-3 px-3.5 py-2.5 mx-3 mb-4 rounded-xl border border-[rgba(99,102,241,0.12)] bg-transparent text-[#8892b0] text-[13px] font-medium cursor-pointer font-['Montserrat'] tracking-[0.3px] whitespace-nowrap flex-shrink-0 outline-none transition-all duration-200 ${
+              isCollapsed ? 'justify-center px-2.5 mx-1.5 mb-4' : ''
+            } hover:bg-[rgba(239,68,68,0.08)] hover:border-[rgba(239,68,68,0.3)] hover:text-[#fc8181] ${
+              isCollapsed ? '' : 'hover:translate-x-1'
+            } active:scale-97`}
+            onClick={handleLogout}
+          >
+            <span className="text-lg flex items-center flex-shrink-0">
+              <FaSignOutAlt />
+            </span>
+            <motion.span
+              variants={logoutTextVariants}
               initial="visible"
               animate={isCollapsed ? "hidden" : "visible"}
-              className="min-w-0 flex-1 overflow-hidden"
+              className="overflow-hidden whitespace-nowrap"
             >
-              <div className="text-xs font-medium text-[#e2e8f0] whitespace-nowrap overflow-hidden text-ellipsis">
-                {getDisplayName()}
-              </div>
-              <div className="text-[9px] text-[#8892b0] whitespace-nowrap overflow-hidden text-ellipsis mt-0.5">
-                {getUserEmail()}
-              </div>
-              <div className="text-[8px] text-[#6366f1] font-medium tracking-[0.5px] mt-0.5 opacity-80 uppercase">
-                {getRoleDisplay()}
-              </div>
-            </motion.div>
-          </div>
-        )}
-
-        {/* ── Logout ── */}
-        <button
-          className={`flex items-center gap-3 px-3.5 py-2.5 mx-3 mb-4 rounded-xl border border-[rgba(99,102,241,0.12)] bg-transparent text-[#8892b0] text-[13px] font-medium cursor-pointer font-['Montserrat'] tracking-[0.3px] whitespace-nowrap flex-shrink-0 outline-none transition-all duration-200 ${
-            isCollapsed ? 'justify-center px-2.5 mx-1.5 mb-4' : ''
-          } hover:bg-[rgba(239,68,68,0.08)] hover:border-[rgba(239,68,68,0.3)] hover:text-[#fc8181] ${
-            isCollapsed ? '' : 'hover:translate-x-1'
-          } active:scale-97`}
-          onClick={handleLogout}
-        >
-          <span className="text-lg flex items-center flex-shrink-0">
-            <FaSignOutAlt />
-          </span>
-          <motion.span
-            variants={logoutTextVariants}
-            initial="visible"
-            animate={isCollapsed ? "hidden" : "visible"}
-            className="overflow-hidden whitespace-nowrap"
-          >
-            Log Out
-          </motion.span>
-        </button>
+              Log Out
+            </motion.span>
+          </button>
+        </div>
       </motion.aside>
 
       {/* ── Main Content ── */}
-      <main className="flex-1 min-w-0 min-h-screen bg-transparent flex flex-col p-6 transition-margin duration-300 md:ml-[72px] overflow-y-auto">
+      <main 
+        className="flex-1 min-w-0 min-h-screen bg-transparent flex flex-col p-6 transition-all duration-300 overflow-y-auto"
+        style={{ marginLeft: getMarginLeft() }}
+      >
         <Outlet />
       </main>
 
@@ -439,7 +457,7 @@ const Sidebar = () => {
         
         @media (max-width: 768px) {
           main {
-            margin-left: 72px;
+            margin-left: 72px !important;
             padding: 16px;
           }
         }

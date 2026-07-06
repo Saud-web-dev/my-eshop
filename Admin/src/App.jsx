@@ -9,31 +9,22 @@ import ProductForm from './assets/pages/ProductForm'
 import Categories from './assets/pages/Categories'
 import ProductDetails from './assets/pages/ProductDetails'
 
-
 const App = () => {
   return (
     <BrowserRouter>
-
       <Routes>
-
         <Route path="/" element={<Signup />} />
         <Route path="/login" element={<Login />} />
 
-
         <Route element={<Sidebar />}>
-
           <Route path="/dashboard" element={<Dashboard />} />
-
           <Route path="/products" element={<Products />} />
           <Route path="/products/:id" element={<ProductDetails />} />
           <Route path="/products/new" element={<ProductForm />} />
           <Route path="/products/edit/:id" element={<ProductForm />} />
           <Route path="/categories" element={<Categories />} />
-
         </Route>
-
       </Routes>
-
     </BrowserRouter>
   )
 }

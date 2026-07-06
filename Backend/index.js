@@ -66,11 +66,9 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// CORS Configuration
 const allowedOrigins = [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'https://zahoor-fragrance-new-web.vercel.app'
+    process.env.FRONTEND_URL_LOCAL,
+    process.env.FRONTEND_URL
 ];
 
 app.use(

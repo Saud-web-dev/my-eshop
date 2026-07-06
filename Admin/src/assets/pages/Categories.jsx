@@ -314,7 +314,7 @@ const Categories = () => {
         </form>
       </Modal>
 
-     // Categories.jsx - Delete dialog mein
+      
       <ConfirmDialog
         isOpen={deleteDialog.isOpen}
         onClose={() => setDeleteDialog({ isOpen: false, id: null, name: "" })}

@@ -103,35 +103,45 @@ export const updateCategory = async (req, res) => {
 
 // ✅ Delete category
 export const deleteCategory = async (req, res) => {
+
     try {
-        const category = await Category.findById(req.params.id);
-        if (!category) {
-            return res.status(404).json({ success: false, message: 'Category not found' });
-        }
-
-        // Check: Category mein products hain?
-        const Product = (await import('../model/productSchema.js')).default;
-        const productCount = await Product.countDocuments({ category: req.params.id });
-        
-        if (productCount > 0) {
-            return res.status(400).json({
-                success: false,
-                message: `Cannot delete! ${productCount} products exist in this category`
-            });
-        }
-
-        // Image delete karo
-        if (category.image?.filename) {
-            const imagePath = path.join('uploads', category.image.filename);
-            if (fs.existsSync(imagePath)) {
-                fs.unlinkSync(imagePath);
-            }
-        }
-
-        await category.deleteOne();
-
-        res.status(200).json({ success: true, message: 'Category deleted successfully' });
+        const deleted = await Category.findByIdAndDelete(req.params.id);
+        if (!deleted) return res.status(404).json({ msg: "Not found" });
+        res.json({ success: true, deleted });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({ msg: error.message });
     }
+
+
+    // try {
+    //     const category = await Category.findById(req.params.id);
+    //     if (!category) {
+    //         return res.status(404).json({ success: false, message: 'Category not found' });
+    //     }
+
+    //     // Check: Category mein products hain?
+    //     const Product = (await import('../model/productSchema.js')).default;
+    //     const productCount = await Product.countDocuments({ category: req.params.id });
+
+    //     if (productCount > 0) {
+    //         return res.status(400).json({
+    //             success: false,
+    //             message: `Cannot delete! ${productCount} products exist in this category`
+    //         });
+    //     }
+
+    //     // Image delete karo
+    //     if (category.image?.filename) {
+    //         const imagePath = path.join('uploads', category.image.filename);
+    //         if (fs.existsSync(imagePath)) {
+    //             fs.unlinkSync(imagePath);
+    //         }
+    //     }
+
+    //     await category.deleteOne();
+
+    //     res.status(200).json({ success: true, message: 'Category deleted successfully' });
+    // } catch (error) {
+    //     res.status(500).json({ success: false, message: error.message });
+    // }
 };
