@@ -1,10 +1,14 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.jsx'
+import { createRoot } from 'react-dom/client';
+import '@/styles/globals.css';
+import App from './App';
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+// Global logout event (fired by axios interceptor on 401)
+window.addEventListener('auth:logout', () => {
+  localStorage.removeItem('accessToken');
+  sessionStorage.removeItem('hadSession');
+  window.location.href = '/login';
+});
+
+// StrictMode is intentionally removed — it double-invokes effects in dev
+// which causes GoogleOAuthProvider to call google.accounts.id.initialize() twice
+createRoot(document.getElementById('root')).render(<App />);

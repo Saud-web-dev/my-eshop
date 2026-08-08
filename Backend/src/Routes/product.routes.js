@@ -1,25 +1,24 @@
-import express from 'express';
-import upload from '../middlewares/multer.js';
+import { Router } from 'express';
 import {
-    getAllProducts,
-    getProduct,
-    createProduct,
-    updateProduct,
-    deleteProduct,
-    getProductsByCategory,
-    deleteProductImage
+  getAllProducts, getProduct, createProduct, updateProduct,
+  deleteProduct, restoreProduct, deleteProductImage, toggleProductStatus,
 } from '../controllers/product.controller.js';
+import { protect, authorize } from '../middleware/auth.js';
+import { productUpload } from '../middleware/multer.js';
 
-const router = express.Router();
+const router = Router();
 
-// Pehle ye route (warna :id se conflict hoga)
-router.get('/category/:categoryId', getProductsByCategory);
-
-router.get('/', getAllProducts);
+// Public
+router.get('/',    getAllProducts);
 router.get('/:id', getProduct);
-router.post('/', upload.array('images', 5), createProduct); // Max 5 images
-router.put('/:id', upload.array('images', 5), updateProduct);
-router.delete('/:id', deleteProduct);
-router.delete('/:id/images/:filename', deleteProductImage);
+
+// Admin only
+router.use(protect, authorize('admin'));
+router.post('/',                           productUpload.array('images', 10), createProduct);
+router.put('/:id',                         productUpload.array('images', 10), updateProduct);
+router.delete('/:id',                      deleteProduct);
+router.patch('/:id/restore',               restoreProduct);
+router.patch('/:id/toggle-status',         toggleProductStatus);
+router.delete('/:id/images/:publicId',     deleteProductImage);
 
 export default router;

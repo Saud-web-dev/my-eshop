@@ -1,19 +1,21 @@
-import express from 'express';
-import upload from '../middlewares/multer.js';
+import { Router } from 'express';
 import {
-    getAllCategories,
-    getCategory,
-    createCategory,
-    updateCategory,
-    deleteCategory
+  getAllCategories, getCategory, createCategory,
+  updateCategory, deleteCategory,
 } from '../controllers/category.controller.js';
+import { protect, authorize } from '../middleware/auth.js';
+import { categoryUpload } from '../middleware/multer.js';
 
-const router = express.Router();
+const router = Router();
 
-router.get('/', getAllCategories);
+// Public
+router.get('/',    getAllCategories);
 router.get('/:id', getCategory);
-router.post('/', upload.single('image'), createCategory);
-router.put('/:id', upload.single('image'), updateCategory);
-router.delete('/:id', deleteCategory);
+
+// Admin only
+router.use(protect, authorize('admin'));
+router.post('/',    categoryUpload.single('image'), createCategory);
+router.put('/:id',  categoryUpload.single('image'), updateCategory);
+router.delete('/:id',                               deleteCategory);
 
 export default router;

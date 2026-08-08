@@ -1,0 +1,111 @@
+================================================================================
+                    Ecommerce shop WEB - COMPLETE USAGE GUIDE
+================================================================================
+
+OVERVIEW
+--------
+This is a full-stack e-commerce web application featuring:
+- React + Vite + TailwindCSS on Frontend
+- Node.js + Express + MongoDB + Mongoose on Backend
+- Cloudinary for Image Uploads
+- Gmail SMTP (Nodemailer) for Emails & OTP
+- Google OAuth 2.0 Integration
+- Fully Dynamic Admin Panel (Settings, Offers, Products, Orders, Reviews, Pages)
+
+
+================================================================================
+1. FIRST-TIME ADMIN SETUP & LOGIN
+================================================================================
+
+1. Open your browser and go to: http://localhost:5173/admin-signup
+2. Enter your Name, Email, Password, and the Admin Setup Key:
+   `zahoor-admin-setup-2024`
+3. Click "Create Admin Account".
+4. Log in and access the Admin Dashboard at: http://localhost:5173/admin/dashboard
+
+================================================================================
+2. GOOGLE OAUTH SETUP & GOOGLE SIGN-IN
+================================================================================
+
+How Google Sign-In Works:
+- Frontend uses `@react-oauth/google` with `VITE_GOOGLE_CLIENT_ID`.
+- User clicks "Continue with Google" -> Google Popup opens -> User selects email -> Backend verifies token -> User is logged in.
+
+Customizing Store Name on Google Popup:
+To change the store/brand name displayed inside the Google OAuth Popup:
+1. Go to Google Cloud Console: https://console.cloud.google.com/
+2. Select your Project -> APIs & Services -> OAuth Consent Screen.
+3. Edit "App Name" to your new Store Name (e.g. "My Luxury Store").
+4. Under "Authorized JavaScript Origins", ensure `http://localhost:5173` is added.
+
+================================================================================
+3. GMAIL EMAIL SERVICE (OTP, CONTACT FORM & ORDERS)
+================================================================================
+
+Emails sent automatically:
+- OTP Email for user verification & password resets.
+- Welcome Email when a user registers.
+- Contact Form emails sent from `/contact` page directly to Store Admin.
+- Order Confirmation emails when a customer places an order.
+
+================================================================================
+4. OFFERS, SALES & PROMO CODES MANAGEMENT
+================================================================================
+
+Creating an Offer / Sale Banner:
+1. Go to Admin Dashboard -> Offers & Sales (http://localhost:5173/admin/offers).
+2. Click "Add Offer".
+3. Fill in:
+   - Offer Title (e.g., "Ramadan Special")
+   - Discount (%) (e.g., 20)
+   - Promo Code (e.g., "SAVE20")
+   - Start Date & End Date (optional)
+   - Upload Banner Image
+4. Click "Create".
+
+How Customers Use Promo Codes:
+- Customers add products to Cart.
+- In Cart or Checkout, they type the Promo Code (e.g., "SAVE20") into the Coupon box.
+- The system automatically validates dates, discount percentage, and applies the price reduction.
+
+================================================================================
+5. MANAGING DYNAMIC ABOUT US PAGE & SECOND PICTURE
+================================================================================
+
+To customize the About Us page dynamically:
+1. Go to Admin Dashboard -> Store Settings (http://localhost:5173/admin/settings).
+2. Click on the "About Page" tab.
+3. You can customize:
+   - Page Title (e.g., "About Our Brand")
+   - Hero Tagline / Subtitle
+   - Story Subtitle
+   - Full Brand Story Text (supports paragraphs and line breaks)
+   - Second Picture (Upload / Change feature picture displayed next to story)
+   - Promise Title & Promise Description
+4. Click "Save Settings".
+5. Visit http://localhost:5173/about to view your live dynamic About page!
+
+================================================================================
+6. PRODUCT REVIEWS & RATINGS
+================================================================================
+
+Customer Reviews:
+1. Customers can leave 1 to 5 star ratings and written reviews on any product detail page.
+2. Reviews immediately appear on the product page and update the product's overall average rating.
+
+Admin Moderation:
+1. Admin can view and moderate reviews under Admin Dashboard -> Reviews.
+2. Admin can reply to customer reviews, approve, hide, feature, or delete them.
+
+================================================================================
+7. NAVBAR & GENERAL STORE CUSTOMIZATION
+================================================================================
+
+- Header Navigation Links (Home, Shop, About, Contact) are automatically centered.
+- Logo & Store Name can be changed anytime under Admin Settings -> General.
+- Accent Colors & Dark/Light mode can be set under Admin Settings -> Theme.
+- Business Hours, Social Links, and Shipping Rates are fully editable in Admin Settings.
+
+================================================================================
+                               END OF GUIDE
+================================================================================

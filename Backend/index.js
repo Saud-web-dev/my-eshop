@@ -1,110 +1,88 @@
-// import express from "express";
-// import cors from "cors";
-// import dotenv from "dotenv";
-// import connectDB from "./src/config/db.js";
-// import cookieParser from "cookie-parser";
-// import adminRoutes from "./src/Auth/routes/admin.routes.js";
-// import productRoutes from "./src/Routes/product.routes.js";
-// import categoryRoutes from "./src/Routes/category.routes.js";
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import morgan from 'morgan';
 
-// import path from 'path';
-// import { fileURLToPath } from 'url';  
+import connectDB from './src/config/db.js';
+import './src/config/cloudinary.js';
 
-// dotenv.config();
+import authRoutes from './src/routes/auth.routes.js';
+import productRoutes from './src/routes/product.routes.js';
+import categoryRoutes from './src/routes/category.routes.js';
+import orderRoutes from './src/routes/order.routes.js';
+import reviewRoutes from './src/routes/review.routes.js';
+import couponRoutes from './src/routes/coupon.routes.js';
+import settingsRoutes from './src/routes/settings.routes.js';
+import analyticsRoutes from './src/routes/analytics.routes.js';
+import faqRoutes from './src/routes/faq.routes.js';
+import contentPageRoutes from './src/routes/contentPage.routes.js';
+import offerRoutes from './src/routes/offer.routes.js';
 
-// connectDB();
+import { generalLimiter } from './src/middleware/rateLimiter.js';
+import { notFound, errorHandler } from './src/middleware/errorHandler.js';
 
-// const app = express();
-
-// // ✅ YE 2 LINES ADD KARO - ESM mein __dirname ke liye
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = path.dirname(__filename);
-
-// // Middlewares
-// app.use(
-//     cors({
-//         origin: process.env.FRONTEND_URL, 
-//         credentials: true,
-//     })
-// );
-// app.use(express.json());
-// app.use(express.urlencoded({ extended: true }));
-// app.use(cookieParser());
-
-// // ✅ Ab __dirname chale ga
-// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// app.use("/api/admin", adminRoutes);
-// app.use('/api/products', productRoutes);
-// app.use('/api/categories', categoryRoutes);
-
-// const PORT = process.env.PORT || 5000;
-
-// // Start Server
-// app.listen(PORT, () => {
-//     console.log(`Server running on http://localhost:${PORT}`);
-// });
-
-
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import connectDB from "./src/config/db.js";
-import cookieParser from "cookie-parser";
-import adminRoutes from "./src/Auth/routes/admin.routes.js";
-import productRoutes from "./src/Routes/product.routes.js";
-import categoryRoutes from "./src/Routes/category.routes.js";
-import path from 'path';
-import { fileURLToPath } from 'url';  
-
-dotenv.config();
-
+// ─── Connect Database ────────────────────────────────────────────────────────
 connectDB();
 
 const app = express();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// ─── Security ────────────────────────────────────────────────────────────────
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
 
+// ─── CORS ────────────────────────────────────────────────────────────────────
 const allowedOrigins = [
-    process.env.FRONTEND_URL_LOCAL,
-    process.env.FRONTEND_URL
-];
+  process.env.CLIENT_URL,
+  'http://localhost:5173',
+  'http://localhost:3000',
+].filter(Boolean);
 
-app.use(
-    cors({
-        origin: function (origin, callback) {
-            // Allow requests with no origin (like mobile apps or curl requests)
-            if (!origin) return callback(null, true);
-            
-            if (allowedOrigins.indexOf(origin) !== -1) {
-                callback(null, true);
-            } else {
-                console.log('Blocked origin:', origin); // For debugging
-                callback(new Error('Not allowed by CORS'));
-            }
-        },
-        credentials: true,
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization']
-    })
-);
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
+// ─── Core Middleware ─────────────────────────────────────────────────────────
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser(process.env.COOKIE_SECRET));
+app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined'));
 
-// Static files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// ─── Rate Limiting ───────────────────────────────────────────────────────────
+app.use('/api/', generalLimiter);
 
-// Routes
-app.use("/api/admin", adminRoutes);
+// ─── Health Check ────────────────────────────────────────────────────────────
+app.get('/health', (req, res) => {
+  res.json({ success: true, message: 'Store API is running.', env: process.env.NODE_ENV });
+});
+
+// ─── API Routes ──────────────────────────────────────────────────────────────
+app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/coupons', couponRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/faqs', faqRoutes);
+app.use('/api/pages', contentPageRoutes);
+app.use('/api/offers', offerRoutes);
 
+// ─── Error Handlers ──────────────────────────────────────────────────────────
+app.use(notFound);
+app.use(errorHandler);
+
+// ─── Start Server ─────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
-
 app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    console.log('Allowed origins:', allowedOrigins);
+  console.log(`✅ Server running on http://localhost:${PORT}`);
 });

@@ -1,0 +1,200 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── CSS Custom Properties (Theme Tokens) ────────────────────────────────── */
+:root {
+  /* Primary palette – Velvet Obsidian & Deep Charcoal */
+  --color-primary-50:  248 246 240;
+  --color-primary-100: 238 232 218;
+  --color-primary-200: 220 208 180;
+  --color-primary-300: 198 178 132;
+  --color-primary-400: 176 148 84;
+  --color-primary-500: 154 122 48;
+  --color-primary-600: 126 96  34;
+  --color-primary-700: 98  72  24;
+  --color-primary-800: 70  50  16;
+  --color-primary-900: 18  18  26;
+
+  /* Accent – Imperial Gold & Champagne Gold */
+  --color-accent:       212 175  55;
+  --color-accent-hover: 184 147  34;
+
+  /* Surface */
+  --color-surface:         255 253 249;
+  --color-surface-raised:  249 245 237;
+  --color-surface-overlay: 242 236 224;
+
+  /* Text */
+  --color-text-primary:   20  20  28;
+  --color-text-secondary: 75  70  65;
+  --color-text-muted:    140 132 120;
+
+  /* Border */
+  --color-border:       228 220 204;
+  --color-border-strong: 195 182 155;
+
+  /* Typography */
+  --font-sans:    'Inter', system-ui, sans-serif;
+  --font-heading: 'Playfair Display', serif;
+
+  /* Radius */
+  --radius-btn:  0.5rem;
+  --radius-card: 0.85rem;
+}
+
+/* Dark mode tokens – Rich Velvet Obsidian with Pure Gold accents */
+.dark {
+  --color-surface:         11  11  18;
+  --color-surface-raised:  18  18  28;
+  --color-surface-overlay: 28  28  42;
+
+  --color-text-primary:   245 242 235;
+  --color-text-secondary: 190 182 165;
+  --color-text-muted:     125 118 102;
+
+  --color-border:       45  42  58;
+  --color-border-strong: 75  70  95;
+}
+
+/* ─── Base ────────────────────────────────────────────────────────────────── */
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-surface text-text-primary font-sans antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    @apply font-semibold tracking-tight;
+  }
+
+  a { @apply transition-colors duration-200; }
+
+  img { @apply max-w-full; }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-surface-overlay; }
+  ::-webkit-scrollbar-thumb { @apply bg-border-strong rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { background: rgb(var(--color-accent)); }
+
+  ::selection { background: rgb(var(--color-accent) / 0.2); color: rgb(var(--color-accent)); }
+}
+
+/* ─── Components ─────────────────────────────────────────────────────────── */
+@layer components {
+  /* Skeleton loader */
+  .skeleton {
+    @apply relative overflow-hidden rounded bg-surface-overlay;
+  }
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0;
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.1), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  /* Container */
+  .container-custom {
+    @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Glass card */
+  .glass {
+    @apply bg-white/10 backdrop-blur-md border border-white/20;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-accent to-primary-500 bg-clip-text text-transparent;
+  }
+
+  /* Section title */
+  .section-title {
+    @apply text-3xl md:text-4xl font-bold text-text-primary;
+    font-family: var(--font-heading);
+  }
+
+  /* Product card */
+  .product-card {
+    @apply bg-surface rounded-card shadow-card hover:shadow-card-hover transition-all duration-300 overflow-hidden;
+  }
+
+  /* Admin sidebar link */
+  .sidebar-link {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-text-secondary
+           hover:bg-surface-overlay hover:text-text-primary transition-all duration-200;
+  }
+  .sidebar-link.active {
+    @apply bg-accent/10 text-accent font-semibold;
+  }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
+  }
+
+  /* Input base */
+  .input-base {
+    @apply w-full px-3.5 py-2.5 bg-surface border border-border rounded-btn
+           text-text-primary placeholder:text-text-muted
+           focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent
+           transition-all duration-200 text-sm;
+  }
+
+  /* Button variants */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-btn
+           bg-accent text-white font-semibold text-sm
+           hover:bg-accent-hover active:scale-[0.98] transition-all duration-200
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-btn
+           border-2 border-accent text-accent font-semibold text-sm
+           hover:bg-accent hover:text-white active:scale-[0.98] transition-all duration-200
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-btn
+           text-text-secondary font-medium text-sm
+           hover:bg-surface-overlay hover:text-text-primary transition-all duration-200;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-btn
+           bg-red-500 text-white font-semibold text-sm
+           hover:bg-red-600 active:scale-[0.98] transition-all duration-200
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+}
+
+/* ─── Utilities ──────────────────────────────────────────────────────────── */
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .text-balance { text-wrap: balance; }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
