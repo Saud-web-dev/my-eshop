@@ -34,7 +34,7 @@ const toastStyle = {
 // Placing it inside RouterProvider would cause it to re-initialize
 // on every route change, triggering the "called multiple times" warning.
 const App = () => (
-  <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ''}>
+  <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || import.meta.env.GOOGLE_CLIENT_ID || ''}>
     
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
