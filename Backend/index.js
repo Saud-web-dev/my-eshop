@@ -59,7 +59,9 @@ app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined'));
 // ─── Rate Limiting ───────────────────────────────────────────────────────────
 app.use('/api/', generalLimiter);
 
-// ─── Health Check ────────────────────────────────────────────────────────────
+// ─── Health Check ────────────────────────────────────────────────────────────app.get('/', (req, res) => {
+  res.json({ success: true, message: 'Store API is running.', version: '1.0.0' });
+});
 app.get('/health', (req, res) => {
   res.json({ success: true, message: 'Store API is running.', env: process.env.NODE_ENV });
 });
