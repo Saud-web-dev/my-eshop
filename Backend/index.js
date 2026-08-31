@@ -38,7 +38,6 @@ const allowedOrigins = [
   process.env.CLIENT_URL,
   'http://localhost:5173',
   'http://localhost:3000',
-  'https://your-eshop-business.vercel.app/',
 ].filter(Boolean);
 
 app.use(cors({
