@@ -35,14 +35,24 @@ app.use(helmet({
 
 // ─── CORS ────────────────────────────────────────────────────────────────────
 const allowedOrigins = [
-  process.env.CLIENT_URL,
+  process.env.CLIENT_URL?.replace(/\/$/, ''), // Remove trailing slash
   'http://localhost:5173',
   'http://localhost:3000',
+  'https://your-eshop-business.vercel.app', // Production Frontend
 ].filter(Boolean);
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    // Allow requests with no origin (like mobile apps, curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin matches any allowed origin (remove trailing slash for comparison)
+    const cleanOrigin = origin.replace(/\/$/, '');
+    if (allowedOrigins.includes(cleanOrigin) || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    console.error(`CORS blocked: ${origin}`);
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
@@ -59,9 +69,11 @@ app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined'));
 // ─── Rate Limiting ───────────────────────────────────────────────────────────
 app.use('/api/', generalLimiter);
 
-// ─── Health Check ────────────────────────────────────────────────────────────app.get('/', (req, res) => {
+// ─── Health Check ────────────────────────────────────────────────────────────
+app.get('/', (req, res) => {
   res.json({ success: true, message: 'Store API is running.', version: '1.0.0' });
 });
+
 app.get('/health', (req, res) => {
   res.json({ success: true, message: 'Store API is running.', env: process.env.NODE_ENV });
 });
