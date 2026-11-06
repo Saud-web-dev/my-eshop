@@ -107,6 +107,7 @@ connectDB();
 
 const app = express();
 app.disable('x-powered-by');
+if (process.env.VERCEL) app.set('trust proxy', 1);
 
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -131,7 +132,7 @@ app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
     const cleanOrigin = origin.replace(/\/$/, '');
-    const isVercelPreviewOrigin = /^https:\/\/my-eshop-125-[a-z0-9-]+-saud7\.vercel\.app$/i.test(cleanOrigin);
+    const isVercelPreviewOrigin = /^https:\/\/my-eshop(?:-[a-z0-9-]+)?-saud7\.vercel\.app$/i.test(cleanOrigin);
     if (allowedOrigins.includes(cleanOrigin) || allowedOrigins.includes(origin) || isVercelPreviewOrigin) {
       return callback(null, true);
     }
