@@ -9,7 +9,7 @@ import Input, { Textarea } from '@components/ui/Input';
 import Button from '@components/ui/Button';
 import { getErrorMessage } from '@utils/helpers';
 import toast from 'react-hot-toast';
-import { MdChevronRight, MdEmail, MdPhone, MdLocationOn, MdSchedule, MdCheckCircle } from 'react-icons/md';
+import { MdChevronRight, MdEmail, MdPhone, MdLocationOn, MdSchedule } from 'react-icons/md';
 import {
   FaFacebook, FaInstagram, FaTwitter, FaYoutube, FaTiktok, FaWhatsapp, FaLinkedin,
 } from 'react-icons/fa';
@@ -38,12 +38,15 @@ const Contact = () => {
   const onSubmit = async (d) => {
     setSending(true);
     try {
-      await settingsAPI.sendContact({
+      const { data } = await settingsAPI.sendContact({
         name: d.name,
         email: d.email,
         subject: d.subject,
         message: d.message,
       });
+      if (!data?.success) {
+        throw new Error(data?.message || 'Your message could not be sent. Please try again.');
+      }
       toast.success('Message sent! We will get back to you soon.');
       reset();
     } catch (e) {

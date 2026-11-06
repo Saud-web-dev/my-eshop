@@ -19,7 +19,7 @@ router.patch('/:id/helpful',         voteHelpful);
 router.post('/:id/report',           reportReview);
 
 // Admin
-router.get('/',                    authorize('admin'), adminGetAllReviews);
-router.patch('/:id/moderate',      authorize('admin'), moderateReview);
+router.get('/',                    authorize('admin', 'manager', 'staff'), adminGetAllReviews);
+router.patch('/:id/moderate',      authorize('admin', 'manager', 'staff'), moderateReview);
 
 export default router;

@@ -7,7 +7,7 @@ import {
   addAddress, updateAddress, setDefaultAddress, deleteAddress, deleteAccount,
 } from '../controllers/auth.controller.js';
 import { protect } from '../middleware/auth.js';
-import { authLimiter, otpLimiter } from '../middleware/rateLimiter.js';
+import { authLimiter, otpLimiter, passwordLimiter } from '../middleware/rateLimiter.js';
 import { avatarUpload } from '../middleware/multer.js';
 
 const router = Router();
@@ -22,7 +22,7 @@ router.post('/login',            authLimiter,  login);
 router.post('/google',                         googleAuth);
 router.post('/refresh-token',                  refreshToken);
 router.post('/forgot-password',  authLimiter,  forgotPassword);
-router.post('/reset-password',                 resetPassword);
+router.post('/reset-password',    passwordLimiter,  resetPassword);
 
 // Protected
 router.use(protect);

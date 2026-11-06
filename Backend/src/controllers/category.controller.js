@@ -51,6 +51,42 @@ export const createCategory = async (req, res) => {
   }
 };
 
+export const bulkImportCategories = async (req, res) => {
+  const rows = req.body?.items;
+  if (!Array.isArray(rows) || rows.length === 0 || rows.length > 50) {
+    return res.status(400).json({ success: false, message: 'Import between 1 and 50 category rows at a time.' });
+  }
+
+  const errors = [];
+  let createdCount = 0;
+
+  for (const [index, row] of rows.entries()) {
+    try {
+      const name = String(row.name || '').trim();
+      if (!name || name.length > 120) throw new Error('Name is required and must be at most 120 characters.');
+      if (String(row.description || '').length > 500) throw new Error('Description must be at most 500 characters.');
+
+      const parseBoolean = (value) => {
+        if (value === undefined || value === '') return true;
+        return ['true', '1', 'yes'].includes(String(value).trim().toLowerCase());
+      };
+      await Category.create({
+        name,
+        description: String(row.description || '').trim(),
+        isActive: parseBoolean(row.isActive),
+      });
+      createdCount += 1;
+    } catch (error) {
+      errors.push({
+        row: index + 2,
+        message: error.code === 11000 ? 'Category name already exists.' : error.message,
+      });
+    }
+  }
+
+  res.status(200).json({ success: true, data: { createdCount, failedCount: errors.length, errors } });
+};
+
 // ─── UPDATE ──────────────────────────────────────────────────────────────────
 export const updateCategory = async (req, res) => {
   try {

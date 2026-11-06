@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
 import { useForm } from 'react-hook-form';
@@ -6,20 +6,24 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { categoryAPI } from '@services/api';
 import { categorySchema } from '@utils/validators';
 import { getErrorMessage } from '@utils/helpers';
-import Input, { Textarea, Select } from '@components/ui/Input';
+import Input, { Textarea } from '@components/ui/Input';
 import Button from '@components/ui/Button';
 import ImageUpload from '@components/ui/ImageUpload';
 import Modal, { ConfirmDialog } from '@components/ui/Modal';
 import { TableRowSkeleton } from '@components/ui/SkeletonLoader';
 import Badge from '@components/ui/Badge';
 import toast from 'react-hot-toast';
-import { MdAdd, MdEdit, MdDelete } from 'react-icons/md';
+import { downloadCsvTemplate, parseCsv } from '@utils/csv';
+import { MdAdd, MdEdit, MdDelete, MdUploadFile } from 'react-icons/md';
 
 const Categories = () => {
   const [modalOpen, setModalOpen]   = useState(false);
   const [editing, setEditing]       = useState(null);
   const [confirmId, setConfirmId]   = useState(null);
   const [imageFiles, setImageFiles] = useState([]);
+  const [importing, setImporting] = useState(false);
+  const [importReport, setImportReport] = useState(null);
+  const importInput = useRef(null);
   const qc = useQueryClient();
 
   const { data: categories, isLoading } = useQuery({
@@ -58,15 +62,56 @@ const Categories = () => {
     mutation.mutate(fd);
   };
 
+  const handleImport = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (file.size > 1024 * 1024) {
+      toast.error('CSV file must be 1 MB or smaller.');
+      return;
+    }
+
+    setImporting(true);
+    try {
+      const items = parseCsv(await file.text());
+      if (items.length > 50) throw new Error('Import a maximum of 50 categories per CSV.');
+      const { data } = await categoryAPI.bulkImport(items);
+      const { createdCount, failedCount } = data.data;
+      qc.invalidateQueries({ queryKey: ['admin-categories'] });
+      qc.invalidateQueries({ queryKey: ['shop-categories'] });
+      qc.invalidateQueries({ queryKey: ['home-categories'] });
+      qc.invalidateQueries({ queryKey: ['nav-categories'] });
+      setImportReport(data.data);
+      toast.success(`${createdCount} category(ies) imported${failedCount ? `; ${failedCount} row(s) failed` : ''}.`);
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message || 'Could not import CSV.');
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <>
       <Helmet><title>Categories – Admin</title></Helmet>
 
       <div className="space-y-5">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <h1 className="text-2xl font-bold text-text-primary">Categories</h1>
-          <Button onClick={openAdd} icon={<MdAdd size={18} />}>Add Category</Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <input ref={importInput} type="file" accept=".csv,text/csv" className="hidden" onChange={handleImport} />
+            <Button variant="outline" onClick={() => importInput.current?.click()} loading={importing} icon={<MdUploadFile size={18} />}>
+              Import CSV
+            </Button>
+            <button type="button" className="text-sm text-text-secondary hover:text-accent"
+              onClick={() => downloadCsvTemplate('categories-template.csv',
+                ['name', 'description', 'isActive'],
+                ['Fragrance', 'All fragrances', 'true'])}>
+              Download template
+            </button>
+            <Button onClick={openAdd} icon={<MdAdd size={18} />}>Add Category</Button>
+          </div>
         </div>
+        <p className="text-xs text-text-muted">CSV import accepts up to 50 rows. Create categories before importing products that use them.</p>
 
         <div className="bg-surface border border-border rounded-card overflow-hidden">
           <table className="w-full text-sm">
@@ -145,6 +190,25 @@ const Categories = () => {
         title="Delete Category"
         message="This will permanently delete the category. Products in this category must be reassigned first."
         confirmText="Delete" loading={deleteMutation.isPending} />
+
+      <Modal open={!!importReport} onClose={() => setImportReport(null)} title="Category import report" size="lg">
+        {importReport && (
+          <div className="space-y-4">
+            <p className="text-sm text-text-secondary">
+              Imported {importReport.createdCount}; failed {importReport.failedCount}.
+            </p>
+            {importReport.errors?.length > 0 && (
+              <div className="max-h-64 overflow-y-auto rounded-lg border border-border divide-y divide-border">
+                {importReport.errors.map(error => (
+                  <p key={`${error.row}-${error.message}`} className="px-3 py-2 text-sm text-red-600">
+                    Row {error.row}: {error.message}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </>
   );
 };

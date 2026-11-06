@@ -8,8 +8,8 @@ const router = Router();
 router.get('/', getAllFaqs);
 
 // Admin only
-router.post('/',    protect, authorize('admin'), createFaq);
-router.put('/:id',  protect, authorize('admin'), updateFaq);
-router.delete('/:id', protect, authorize('admin'), deleteFaq);
+router.post('/',    protect, authorize('admin', 'manager', 'staff'), createFaq);
+router.put('/:id',  protect, authorize('admin', 'manager', 'staff'), updateFaq);
+router.delete('/:id', protect, authorize('admin', 'manager', 'staff'), deleteFaq);
 
 export default router;

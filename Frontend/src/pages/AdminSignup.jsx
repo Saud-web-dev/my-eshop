@@ -221,7 +221,7 @@ const AdminSignup = () => {
   } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
-      setupKey: import.meta.env.VITE_ADMIN_SETUP_KEY || '',
+      setupKey: '',
     },
   });
 
@@ -270,7 +270,7 @@ const AdminSignup = () => {
       if (res.data.success) {
         toast.success(res.data.message || 'Admin account created! Please verify your email.', { duration: 6000 });
         navigate(
-          `/verify-otp?email=${encodeURIComponent(data.email)}&purpose=email-verification${res.data.otp ? `&otp=${res.data.otp}` : ''}`
+          `/verify-otp?email=${encodeURIComponent(data.email)}&purpose=email-verification`
         );
       }
     } catch (e) {

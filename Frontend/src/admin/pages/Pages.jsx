@@ -15,7 +15,6 @@ import toast from 'react-hot-toast';
 import { MdAdd, MdEdit, MdDelete, MdVisibility } from 'react-icons/md';
 
 const PAGE_SLUGS = [
-  { slug: 'about',          label: 'About Us' },
   { slug: 'contact',        label: 'Contact Us' },
   { slug: 'faq',            label: 'FAQ Intro' },
   { slug: 'track-order',    label: 'Track Order' },
@@ -25,6 +24,41 @@ const PAGE_SLUGS = [
   { slug: 'privacy-policy', label: 'Privacy Policy' },
   { slug: 'terms',          label: 'Terms of Service' },
 ];
+
+const PAGE_TEMPLATES = {
+  contact: {
+    title: 'Contact Us',
+    content: '<p>[Add your support email, phone number, business address, and opening hours.]</p>',
+  },
+  faq: {
+    title: 'Frequently Asked Questions',
+    content: '<p>[Introduce the topics customers can find in the FAQ section.]</p>',
+  },
+  'track-order': {
+    title: 'Track Your Order',
+    content: '<p>[Explain what information customers need to track an order and how to contact support.]</p>',
+  },
+  shipping: {
+    title: 'Shipping Policy',
+    content: '<h2>Delivery areas and times</h2><p>[Describe the areas you serve and realistic delivery estimates.]</p><h2>Shipping fees</h2><p>[Explain delivery fees, free-shipping thresholds, and any exceptions.]</p><p><strong>Draft template:</strong> Review and customize this information before publishing.</p>',
+  },
+  returns: {
+    title: 'Returns and Exchanges',
+    content: '<h2>Return eligibility</h2><p>[Describe which items may be returned and their condition requirements.]</p><h2>How to request a return</h2><p>[List the steps and contact method customers should use.]</p><p><strong>Draft template:</strong> Review and customize this information before publishing.</p>',
+  },
+  'refund-policy': {
+    title: 'Refund Policy',
+    content: '<h2>Refund requests</h2><p>[Explain how customers can request a refund and what information is needed.]</p><h2>Processing</h2><p>[Describe your review process, expected timelines, and refund method.]</p><p><strong>Draft template:</strong> Review and customize this information before publishing.</p>',
+  },
+  'privacy-policy': {
+    title: 'Privacy Policy',
+    content: '<h2>Information collected</h2><p>[Describe the customer information your store collects.]</p><h2>How information is used</h2><p>[Explain the purposes and any service providers involved.]</p><h2>Contact</h2><p>[Provide a privacy contact method.]</p><p><strong>Draft template:</strong> Have this policy reviewed for your business and applicable laws before publishing.</p>',
+  },
+  terms: {
+    title: 'Terms of Service',
+    content: '<h2>Using this store</h2><p>[Describe the conditions for using your store and placing orders.]</p><h2>Orders and pricing</h2><p>[Explain order acceptance, pricing, and how customers are notified of changes.]</p><h2>Contact</h2><p>[Provide a contact method for questions about these terms.]</p><p><strong>Draft template:</strong> Have these terms reviewed for your business and applicable laws before publishing.</p>',
+  },
+};
 
 const Pages = () => {
   const [modalOpen, setModalOpen] = useState(false);
@@ -36,10 +70,10 @@ const Pages = () => {
   const { data: pages, isLoading } = useQuery({
     queryKey: ['admin-pages'],
     queryFn: () => contentPageAPI.getAll({ includeInactive: 'true' }),
-    select: d => d.data.data,
+    select: d => d.data.data.filter(page => page.slug !== 'about'),
   });
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(contentPageSchema),
   });
 
@@ -102,7 +136,7 @@ const Pages = () => {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold text-text-primary">Pages</h1>
-            <p className="text-sm text-text-muted">Edit static store pages (About, Shipping, Policies, etc.).</p>
+            <p className="text-sm text-text-muted">Edit policy and information pages. Manage About content and images in Settings → About Page.</p>
           </div>
           <Button onClick={openAdd} icon={<MdAdd size={18} />}>Add Page</Button>
         </div>
@@ -170,8 +204,8 @@ const Pages = () => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Input label="Slug" required error={errors.slug?.message} {...register('slug')}
-                list="page-slugs" placeholder="e.g. about" disabled={!!editing}
-                hint="Choose from: about, contact, faq, track-order, shipping, returns, refund-policy, privacy-policy, terms" />
+                list="page-slugs" placeholder="e.g. shipping" disabled={!!editing}
+                hint="About content is managed in Settings → About Page." />
               <datalist id="page-slugs">
                 {PAGE_SLUGS.filter(p => !usedSlugs.has(p.slug) || p.slug === existingSlug).map(p => (
                   <option key={p.slug} value={p.slug}>{p.label}</option>
@@ -180,9 +214,31 @@ const Pages = () => {
             </div>
             <Input label="Title" required error={errors.title?.message} {...register('title')} />
           </div>
+          {!editing && (
+            <label className="block text-sm font-medium text-text-secondary">
+              Start with a page template
+              <select
+                defaultValue=""
+                onChange={event => {
+                  const slug = event.target.value;
+                  const template = PAGE_TEMPLATES[slug];
+                  if (!template) return;
+                  setValue('slug', slug, { shouldValidate: true });
+                  setValue('title', template.title, { shouldValidate: true });
+                  setValue('content', template.content, { shouldValidate: true });
+                }}
+                className="input-base mt-1.5"
+              >
+                <option value="">Choose a template…</option>
+                {PAGE_SLUGS.filter(page => PAGE_TEMPLATES[page.slug] && !usedSlugs.has(page.slug)).map(page => (
+                  <option key={page.slug} value={page.slug}>{page.label}</option>
+                ))}
+              </select>
+            </label>
+          )}
           <Textarea label="Content" rows={8} error={errors.content?.message} {...register('content')}
             className="font-mono text-sm leading-relaxed"
-            hint="Plain text with basic HTML tags (&lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;strong&gt;) supported." />
+            hint="Starter copy contains bracketed placeholders. Replace them before publishing; legal drafts should be reviewed for your business." />
           <div className="grid grid-cols-2 gap-4">
             <Input label="Meta Title (SEO)" error={errors.metaTitle?.message} {...register('metaTitle')} />
             <Input label="Meta Description (SEO)" error={errors.metaDescription?.message} {...register('metaDescription')} />

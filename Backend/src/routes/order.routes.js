@@ -21,7 +21,7 @@ router.patch('/:id/cancel',     cancelOrder);
 router.post('/:id/return',      requestReturn);
 
 // Admin routes
-router.get('/',                     authorize('admin'), adminGetAllOrders);
-router.patch('/:id/status',         authorize('admin'), updateOrderStatus);
+router.get('/',                     authorize('admin', 'manager', 'staff'), adminGetAllOrders);
+router.patch('/:id/status',         authorize('admin', 'manager', 'staff'), updateOrderStatus);
 
 export default router;

@@ -9,6 +9,5 @@ window.addEventListener('auth:logout', () => {
   window.location.href = '/login';
 });
 
-// StrictMode is intentionally removed — it double-invokes effects in dev
-// which causes GoogleOAuthProvider to call google.accounts.id.initialize() twice
+// StrictMode stays disabled to avoid development-only remounts of OAuth widgets.
 createRoot(document.getElementById('root')).render(<App />);

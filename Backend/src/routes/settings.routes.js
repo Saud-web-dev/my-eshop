@@ -14,7 +14,7 @@ router.get('/', getSettings);
 router.post('/contact', sendContactMessage);
 
 // Admin only
-router.use(protect, authorize('admin'));
+router.use(protect, authorize('admin', 'manager', 'staff'));
 router.put('/',                                              updateSettings);
 router.post('/logo',        settingsUpload.single('logo'),   uploadLogo);
 router.post('/banners',     settingsUpload.array('banners', 10), uploadBanner);

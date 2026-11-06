@@ -25,6 +25,19 @@ const imageFilter = (req, file, cb) => {
   else cb(new Error('Only image files are allowed.'), false);
 };
 
+export const getPublicUploadUrl = (req, file) => {
+  if (/^https?:\/\//i.test(file.path)) return file.path;
+
+  const uploadsRoot = path.join(process.cwd(), 'uploads');
+  const relativePath = path.relative(uploadsRoot, file.path);
+  if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+    throw new Error('Uploaded file is outside the public uploads directory.');
+  }
+
+  const encodedPath = relativePath.split(path.sep).map(encodeURIComponent).join('/');
+  return `${req.protocol}://${req.get('host')}/uploads/${encodedPath}`;
+};
+
 // ── Factory: returns a multer instance for the given folder ──────────────────
 const makeUpload = (folder, maxSize = 5 * 1024 * 1024, maxCount = null) => {
   let storage;

@@ -172,15 +172,6 @@ const VerifyOTP = () => {
   const [countdown, setCountdown] = useState(60);
   const refs = useRef([]);
 
-  const urlOtp = searchParams.get('otp') || '';
-
-  useEffect(() => {
-    if (urlOtp && urlOtp.length === 6) {
-      setOtp(urlOtp.split(''));
-      toast.success(`OTP Auto-filled: ${urlOtp}`, { id: 'dev-otp', duration: 8000 });
-    }
-  }, [urlOtp]);
-
   useEffect(() => {
     if (countdown <= 0) return;
     const t = setTimeout(() => setCountdown((c) => c - 1), 1000);

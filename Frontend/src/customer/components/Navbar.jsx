@@ -146,8 +146,8 @@ const Navbar = () => {
                   className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-surface-overlay transition-colors"
                   aria-label="User menu"
                   aria-expanded={userMenuOpen}>
-                  {user?.avatar?.url
-                    ? <img src={user.avatar.url} alt={user.name} className="w-8 h-8 rounded-full object-cover border-2 border-border" />
+                  {(user?.avatar?.url || user?.picture)
+                    ? <img src={user.avatar?.url || user.picture} alt={user.name} className="w-8 h-8 rounded-full object-cover border-2 border-border" />
                     : isAuthenticated
                       ? <div className="w-8 h-8 rounded-full bg-accent text-white text-xs font-bold flex items-center justify-center">{getInitials(user?.name)}</div>
                       : <MdPerson size={22} className="text-text-secondary" />

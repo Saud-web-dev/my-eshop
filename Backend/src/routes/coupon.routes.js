@@ -11,7 +11,7 @@ const router = Router();
 router.post('/validate', protect, validateCoupon);
 
 // Admin only
-router.use(protect, authorize('admin'));
+router.use(protect, authorize('admin', 'manager', 'staff'));
 router.get('/',       getAllCoupons);
 router.post('/',      createCoupon);
 router.put('/:id',    updateCoupon);

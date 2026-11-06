@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
@@ -37,6 +37,9 @@ const Shop = () => {
   const debouncedMax = useDebounce(localMax, 500);
 
   const page     = Number(params.get('page') || 1);
+  const searchParam = params.get('search') || '';
+  const minPriceParam = params.get('minPrice') || '';
+  const maxPriceParam = params.get('maxPrice') || '';
   const category = params.get('category') || '';
   const sort     = params.get('sort') || 'createdAt-desc';
   const minPrice = debouncedMin;
@@ -45,31 +48,34 @@ const Shop = () => {
   const newArrival = params.get('newArrival') || '';
   const bestSeller = params.get('bestSeller') || '';
 
-  const setParam = (key, val) => {
+  const setParam = useCallback((key, val) => {
     const next = new URLSearchParams(params);
     if (val) next.set(key, val); else next.delete(key);
-    next.delete('page');
+    if (key !== 'page') next.delete('page');
     setParams(next);
-  };
+  }, [params, setParams]);
 
   useEffect(() => {
-    if (debouncedSearch !== (params.get('search') || '')) setParam('search', debouncedSearch);
-  }, [debouncedSearch]);
+    if (debouncedSearch !== searchParam) setParam('search', debouncedSearch);
+  }, [debouncedSearch, searchParam, setParam]);
 
   useEffect(() => {
-    if (debouncedMin !== (params.get('minPrice') || '')) setParam('minPrice', debouncedMin);
-  }, [debouncedMin]);
+    if (debouncedMin !== minPriceParam) setParam('minPrice', debouncedMin);
+  }, [debouncedMin, minPriceParam, setParam]);
 
   useEffect(() => {
-    if (debouncedMax !== (params.get('maxPrice') || '')) setParam('maxPrice', debouncedMax);
-  }, [debouncedMax]);
+    if (debouncedMax !== maxPriceParam) setParam('maxPrice', debouncedMax);
+  }, [debouncedMax, maxPriceParam, setParam]);
+
+  useEffect(() => {
+    setLocalSearch(searchParam);
+  }, [searchParam]);
 
   // Keep local price state in sync when URL is cleared externally
   useEffect(() => {
-    setLocalMin(params.get('minPrice') || '');
-    setLocalMax(params.get('maxPrice') || '');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.get('minPrice'), params.get('maxPrice')]);
+    setLocalMin(minPriceParam);
+    setLocalMax(maxPriceParam);
+  }, [minPriceParam, maxPriceParam]);
 
   const clearAll = () => {
     setParams({});

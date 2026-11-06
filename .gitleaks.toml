@@ -1,0 +1,21 @@
+title = "my-eshop gitleaks config"
+
+[allowlist]
+  description = "Allow example env templates and known non-secret files"
+  paths = [
+    '''(?i)\.env\.example$''',
+    '''(?i)\.gitleaks\.toml$''',
+    '''(?i)\.githooks/''',
+  ]
+  regexes = [
+    '''dev-jwt-secret-key-for-local-testing-123456''',
+    '''dev-refresh-secret-key-for-local-testing-123456''',
+    '''dev-cookie-secret-key-for-local-testing-123456''',
+    '''dev-google-client-secret''',
+  ]
+
+[[rules]]
+  id = "generic-api-key"
+  description = "Generic secret-like value"
+  regex = '''(?i)(?:api[_-]?key|secret|token|password|client[_-]?secret)[[:space:]]*[:=][[:space:]]*["'][A-Za-z0-9/+=_.-]{16,}["']'''
+  tags = ["key", "secret"]

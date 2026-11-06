@@ -12,8 +12,8 @@ router.get('/', getAllPages);
 router.get('/:slug', getPage);
 
 // Admin only
-router.post('/',    protect, authorize('admin'), settingsUpload.single('image'), createPage);
-router.put('/:id',  protect, authorize('admin'), settingsUpload.single('image'), updatePage);
-router.delete('/:id', protect, authorize('admin'), deletePage);
+router.post('/',    protect, authorize('admin', 'manager', 'staff'), settingsUpload.single('image'), createPage);
+router.put('/:id',  protect, authorize('admin', 'manager', 'staff'), settingsUpload.single('image'), updatePage);
+router.delete('/:id', protect, authorize('admin', 'manager', 'staff'), deletePage);
 
 export default router;

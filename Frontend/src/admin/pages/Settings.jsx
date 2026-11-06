@@ -7,8 +7,80 @@ import { useTheme } from '@contexts/ThemeContext';
 import Input, { Textarea, Select } from '@components/ui/Input';
 import Button from '@components/ui/Button';
 import ImageUpload from '@components/ui/ImageUpload';
+import ImageCropDialog from '@components/ui/ImageCropDialog';
 import toast from 'react-hot-toast';
 import { MdStore, MdPalette, MdContactMail, MdShare, MdSecurity, MdLocalShipping, MdHome, MdDelete } from 'react-icons/md';
+
+const useObjectUrl = file => {
+  const [url, setUrl] = useState('');
+
+  useEffect(() => {
+    if (!file) {
+      setUrl('');
+      return undefined;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    setUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [file]);
+
+  return url;
+};
+
+const HOMEPAGE_PRESETS = [
+  {
+    id: 'fragrance',
+    label: 'Fragrance Boutique',
+    fields: {
+      heroBadge: 'Discover your signature scent',
+      heroTitle: 'A fragrance for every moment',
+      heroSubtitle: 'Explore a carefully selected collection of memorable scents.',
+      heroCtaLabel: 'Shop Collection',
+      heroSecondaryLabel: 'Our Story',
+      featuredSectionBadge: 'Curated for you',
+      featuredSectionTitle: 'Featured Fragrances',
+      newArrivalsBadge: 'Just arrived',
+      newArrivalsTitle: 'New to the Collection',
+      newArrivalsDesc: 'Meet the latest additions to our store.',
+      newArrivalsCtaLabel: 'Explore New Arrivals',
+    },
+  },
+  {
+    id: 'minimal',
+    label: 'Minimal Boutique',
+    fields: {
+      heroBadge: 'Thoughtfully selected',
+      heroTitle: 'Quality, simply chosen',
+      heroSubtitle: 'A refined collection, selected with care and delivered to your door.',
+      heroCtaLabel: 'Browse Products',
+      heroSecondaryLabel: 'About the Store',
+      featuredSectionBadge: 'The edit',
+      featuredSectionTitle: 'Customer Favorites',
+      newArrivalsBadge: 'The latest',
+      newArrivalsTitle: 'Recently Added',
+      newArrivalsDesc: 'Discover what is new in the collection.',
+      newArrivalsCtaLabel: 'View New Products',
+    },
+  },
+  {
+    id: 'seasonal',
+    label: 'Bold Seasonal',
+    fields: {
+      heroBadge: 'A new season starts here',
+      heroTitle: 'Make every day memorable',
+      heroSubtitle: 'Find standout picks and fresh arrivals for the season.',
+      heroCtaLabel: 'Shop Now',
+      heroSecondaryLabel: 'Meet Us',
+      featuredSectionBadge: 'Handpicked',
+      featuredSectionTitle: 'Standout Picks',
+      newArrivalsBadge: 'Fresh finds',
+      newArrivalsTitle: 'The Latest Drop',
+      newArrivalsDesc: 'See the newest products in the store.',
+      newArrivalsCtaLabel: 'Shop the Latest',
+    },
+  },
+];
 
 const Settings = () => {
   const [tab, setTab]     = useState('general');
@@ -16,6 +88,12 @@ const Settings = () => {
   const [logo, setLogo]   = useState([]);
   const [heroFile, setHeroFile] = useState(null);
   const [heroUploading, setHeroUploading] = useState(false);
+  const [aboutFile, setAboutFile] = useState(null);
+  const [aboutUploading, setAboutUploading] = useState(false);
+  const [cropFile, setCropFile] = useState(null);
+  const [cropTarget, setCropTarget] = useState(null);
+  const heroPreviewUrl = useObjectUrl(heroFile);
+  const aboutPreviewUrl = useObjectUrl(aboutFile);
   const { updateTheme, loadSettings } = useTheme();
   const qc = useQueryClient();
 
@@ -53,6 +131,18 @@ const Settings = () => {
     onError: (e) => toast.error(getErrorMessage(e)),
   });
 
+  const selectImageForCrop = (event, target) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file.');
+      return;
+    }
+    setCropTarget(target);
+    setCropFile(file);
+  };
+
   const logoMutation = useMutation({
     mutationFn: () => {
       const fd = new FormData();
@@ -75,7 +165,14 @@ const Settings = () => {
     try {
       const fd = new FormData();
       fd.append('image', heroFile);
-      await settingsAPI.uploadHeroImage(fd);
+      const response = await settingsAPI.uploadHeroImage(fd);
+      const heroImages = response.data?.data;
+      if (!response.data?.success || !Array.isArray(heroImages) || !heroImages.length) {
+        throw new Error('The hero image was not saved. Please try again.');
+      }
+      qc.setQueryData(['settings'], current => current
+        ? { ...current, data: { ...current.data, data: { ...current.data.data, heroImages } } }
+        : current);
       qc.invalidateQueries({ queryKey: ['settings'] });
       await loadSettings();
       setHeroFile(null);
@@ -89,8 +186,12 @@ const Settings = () => {
 
   const f = form;
 
-  const [aboutFile, setAboutFile] = useState(null);
-  const [aboutUploading, setAboutUploading] = useState(false);
+  const aboutImageUrl = settings?.aboutImage?.url;
+  const [aboutImagePreviewFailed, setAboutImagePreviewFailed] = useState(false);
+
+  useEffect(() => {
+    setAboutImagePreviewFailed(false);
+  }, [aboutImageUrl]);
 
   const uploadAboutImg = async () => {
     if (!aboutFile) return;
@@ -98,7 +199,14 @@ const Settings = () => {
     try {
       const fd = new FormData();
       fd.append('image', aboutFile);
-      await settingsAPI.uploadAboutImage(fd);
+      const response = await settingsAPI.uploadAboutImage(fd);
+      const aboutImage = response.data?.data;
+      if (!response.data?.success || !aboutImage?.url) {
+        throw new Error('The About image was not saved. Please try again.');
+      }
+      qc.setQueryData(['settings'], current => current
+        ? { ...current, data: { ...current.data, data: { ...current.data.data, aboutImage } } }
+        : current);
       qc.invalidateQueries({ queryKey: ['settings'] });
       await loadSettings();
       setAboutFile(null);
@@ -125,6 +233,18 @@ const Settings = () => {
     <>
       <Helmet><title>Settings – Admin</title></Helmet>
       <div className="space-y-5">
+        <ImageCropDialog
+          file={cropFile}
+          title={cropTarget === 'hero' ? 'Crop homepage hero image' : 'Crop About page image'}
+          aspect={cropTarget === 'hero' ? 12 / 5 : 4 / 3}
+          onCancel={() => { setCropFile(null); setCropTarget(null); }}
+          onCrop={file => {
+            if (cropTarget === 'hero') setHeroFile(file);
+            else setAboutFile(file);
+            setCropFile(null);
+            setCropTarget(null);
+          }}
+        />
         <h1 className="text-2xl font-bold text-text-primary">Store Settings</h1>
 
         <div className="flex gap-6">
@@ -184,6 +304,25 @@ const Settings = () => {
 
             {tab === 'homepage' && (
               <div className="space-y-6">
+                <div className="rounded-xl border border-border bg-surface-raised p-4 space-y-2">
+                  <label className="block text-sm font-semibold text-text-primary" htmlFor="homepage-preset">
+                    Start with a homepage preset
+                  </label>
+                  <select
+                    id="homepage-preset"
+                    defaultValue=""
+                    onChange={event => {
+                      const preset = HOMEPAGE_PRESETS.find(item => item.id === event.target.value);
+                      if (preset) setForm(current => ({ ...current, ...preset.fields }));
+                      event.target.value = '';
+                    }}
+                    className="input-base"
+                  >
+                    <option value="">Choose a copy and section preset…</option>
+                    {HOMEPAGE_PRESETS.map(preset => <option key={preset.id} value={preset.id}>{preset.label}</option>)}
+                  </select>
+                  <p className="text-xs text-text-muted">Presets fill homepage text only. Review the fields and click Save; uploaded images are unchanged.</p>
+                </div>
                 {/* Hero Images Upload */}
                 <div className="space-y-4">
                   <h3 className="font-semibold text-text-primary">Hero Background Images</h3>
@@ -211,18 +350,20 @@ const Settings = () => {
                     <label className="btn-outline text-sm cursor-pointer">
                       {heroFile ? 'Change Image' : 'Choose Hero Image'}
                       <input type="file" accept="image/*" className="hidden"
-                        onChange={e => setHeroFile(e.target.files[0] || null)} />
+                      onChange={e => selectImageForCrop(e, 'hero')} />
                     </label>
                     {heroFile && (
                       <>
-                        <img src={URL.createObjectURL(heroFile)} alt="preview"
+                      <img src={heroPreviewUrl} alt="Cropped hero preview"
                           className="h-12 w-20 object-cover rounded border border-border" />
                         <Button onClick={uploadHero} loading={heroUploading} size="sm">Upload</Button>
                         <button onClick={() => setHeroFile(null)} className="text-xs text-text-muted hover:text-red-500">Cancel</button>
                       </>
                     )}
                   </div>
-                  <p className="text-xs text-text-muted">Upload a full-width banner image for the homepage hero section. Recommended: 1920×800px.</p>
+                  <p className="text-xs text-text-muted">
+                    Choose an image to crop it to the homepage banner shape, then click Upload to save it. Recommended: 1920×800px.
+                  </p>
                 </div>
 
                 {/* Hero Text */}
@@ -260,11 +401,7 @@ const Settings = () => {
                 {/* About Section */}
                 <div className="space-y-4 pt-4 border-t border-border">
                   <h3 className="font-semibold text-text-primary">About Section</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input label="Section Badge" placeholder="Our Story" value={f.aboutSectionBadge || ''} onChange={e => set('aboutSectionBadge', e.target.value)} />
-                    <Input label="Section Title" placeholder="About Us" value={f.aboutSectionTitle || ''} onChange={e => set('aboutSectionTitle', e.target.value)} />
-                  </div>
-                  <Textarea label="About Us Text" rows={5} value={f.aboutUs || ''} onChange={e => set('aboutUs', e.target.value)} />
+                  <p className="text-xs text-text-muted">Manage the story text and images once in the About Page tab.</p>
                 </div>
               </div>
             )}
@@ -293,23 +430,37 @@ const Settings = () => {
                   <div className="pt-2">
                     <label className="block text-sm font-medium text-text-secondary mb-2">Second Picture (About Section Feature Image)</label>
                     <div className="flex items-center gap-4">
-                      {settings?.aboutImage?.url ? (
+                      {aboutPreviewUrl ? (
                         <div className="relative w-32 h-24 rounded-lg overflow-hidden border border-border">
-                          <img src={settings.aboutImage.url} alt="About Section" className="w-full h-full object-cover" />
+                          <img src={aboutPreviewUrl} alt="Selected About image preview" className="w-full h-full object-cover" />
+                          <span className="absolute inset-x-0 bottom-0 bg-black/70 px-1 py-0.5 text-center text-[10px] text-white">
+                            Ready to upload
+                          </span>
+                        </div>
+                      ) : aboutImageUrl && !aboutImagePreviewFailed ? (
+                        <div className="relative w-32 h-24 rounded-lg overflow-hidden border border-border">
+                          <img
+                            src={aboutImageUrl}
+                            alt="About Section"
+                            className="w-full h-full object-cover"
+                            onError={() => setAboutImagePreviewFailed(true)}
+                          />
                         </div>
                       ) : (
-                        <div className="w-32 h-24 rounded-lg bg-surface-overlay flex items-center justify-center text-xs text-text-muted">No Image</div>
+                        <div className="w-32 h-24 rounded-lg bg-surface-overlay flex items-center justify-center text-center text-xs text-text-muted">
+                          {aboutImageUrl ? 'Image unavailable — upload it again' : 'No image uploaded'}
+                        </div>
                       )}
                       <div className="space-y-2">
                         <div className="flex items-center gap-3">
                           <label className="btn-outline text-sm cursor-pointer">
                             {aboutFile ? 'Change File' : 'Choose Picture'}
                             <input type="file" accept="image/*" className="hidden"
-                              onChange={e => setAboutFile(e.target.files[0] || null)} />
+                              onChange={e => selectImageForCrop(e, 'about')} />
                           </label>
                           {aboutFile && (
                             <>
-                              <img src={URL.createObjectURL(aboutFile)} alt="preview" className="h-10 w-14 object-cover rounded border border-border" />
+                              <img src={aboutPreviewUrl} alt="Cropped About image preview" className="h-10 w-14 object-cover rounded border border-border" />
                               <Button onClick={uploadAboutImg} loading={aboutUploading} size="sm">Upload</Button>
                               <button onClick={() => setAboutFile(null)} className="text-xs text-text-muted hover:text-red-500">Cancel</button>
                             </>

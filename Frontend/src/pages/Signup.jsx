@@ -183,7 +183,7 @@ const Signup = () => {
       });
       if (res.success) {
         toast.success(res.message || 'Account created! Please verify your email.', { duration: 6000 });
-        navigate(`/verify-otp?email=${encodeURIComponent(data.email)}${res.otp ? `&otp=${res.otp}` : ''}`);
+        navigate(`/verify-otp?email=${encodeURIComponent(data.email)}`);
       }
     } catch (e) {
       toast.error(getErrorMessage(e));

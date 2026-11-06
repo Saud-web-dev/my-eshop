@@ -200,34 +200,33 @@ const getStoreName = async () => {
   }
 };
 
-// Create transporter with robust Gmail SMTP configuration
+// Create a Gmail SMTP transporter using a Google App Password.
 const createTransporter = () => {
   const user = process.env.EMAIL_USER?.trim();
   const pass = process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s+/g, '') : '';
 
   if (!user || !pass) {
-    console.warn('Email credentials not configured (EMAIL_USER or EMAIL_PASS missing).');
+    console.warn('Email credentials are not configured. Set EMAIL_USER and EMAIL_PASS to a Gmail address and App Password.');
+    return null;
+  }
+
+  if (/^(change|replace|your_|example|dummy|placeholder|dev-|demo)/i.test(pass)) {
+    console.warn('EMAIL_PASS is still a placeholder. Set it to a valid Google App Password.');
     return null;
   }
 
   return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
+    service: 'gmail',
     auth: { user, pass },
-    tls: {
-      rejectUnauthorized: false
-    }
   });
 };
 
 // Send email with better error handling
-const sendEmail = async ({ to, subject, html, text }) => {
+const sendEmail = async ({ to, subject, html, text, replyTo }) => {
   const transporter = createTransporter();
 
   if (!transporter) {
-    console.warn('Email not sent - transporter not configured');
-    return { success: false, error: 'Email service not configured' };
+    throw new Error('Email service is not configured. Set EMAIL_USER and a valid Gmail App Password in Backend/.env.');
   }
 
   try {
@@ -238,6 +237,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
       subject,
       html,
       text,
+      ...(replyTo ? { replyTo } : {}),
     };
 
     const info = await transporter.sendMail(mailOptions);
@@ -399,49 +399,111 @@ export const sendOrderConfirmationEmail = async (email, name, order) => {
 
 // Contact Form Email (store receives the customer's message)
 export const sendContactEmail = async ({ name, email, subject, message, storeName, to }) => {
+  const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[character]);
+  const recipient = to || process.env.CONTACT_EMAIL || process.env.EMAIL_USER;
+  const safeSubject = String(subject || 'From website').replace(/[\r\n]+/g, ' ').trim();
+
+  if (!recipient) {
+    return { success: false, error: 'No contact email recipient is configured.' };
+  }
+
   const html = `
     <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8" />
-      <style>
-        body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; }
-        .container { max-width: 560px; margin: 40px auto; background: #fff; border-radius: 12px; overflow: hidden; }
-        .header { background: linear-gradient(135deg, #1a1a2e 0%, #e94560 100%); padding: 24px; text-align: center; color: #fff; }
-        .body { padding: 28px; }
-        .field { margin-bottom: 16px; }
-        .label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-        .value { font-size: 15px; color: #1a1a2e; background: #f8f8f8; border-radius: 8px; padding: 10px 14px; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1>New Contact Message</h1>
-          <p>${storeName || 'Your Store'}</p>
-        </div>
-        <div class="body">
-          <div class="field">
-            <div class="label">From</div>
-            <div class="value">${name} &lt;${email}&gt;</div>
-          </div>
-          <div class="field">
-            <div class="label">Subject</div>
-            <div class="value">${subject || '(No subject)'}</div>
-          </div>
-          <div class="field">
-            <div class="label">Message</div>
-            <div class="value" style="white-space:pre-line">${message}</div>
-          </div>
-        </div>
-      </div>
-    </body>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>New message for ${escapeHtml(storeName || 'Your Store')}</title>
+      </head>
+      <body style="margin:0;padding:0;background-color:#f5f1e9;font-family:Arial,Helvetica,sans-serif;color:#171717;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f5f1e9;">
+          <tr>
+            <td align="center" style="padding:36px 16px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px;background-color:#fffdf9;">
+                <tr>
+                  <td style="padding:28px 36px 18px;border-bottom:1px solid #d8d0c1;">
+                    <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:17px;font-weight:bold;letter-spacing:0.4px;color:#171717;">
+                      ${escapeHtml(storeName || 'Your Store')}
+                    </p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:34px 36px 28px;">
+                    <p style="margin:0 0 16px;font-size:11px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;color:#98752c;">
+                      A note from your customer
+                    </p>
+                    <h1 style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:36px;line-height:1.15;font-weight:normal;color:#171717;">
+                      New contact<br />message
+                    </h1>
+                    <p style="margin:16px 0 0;font-size:15px;line-height:1.7;color:#625c52;">
+                      Someone has reached out through your website. Their message is below.
+                    </p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:0 36px;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-top:1px solid #d8d0c1;border-bottom:1px solid #d8d0c1;">
+                      <tr>
+                        <td width="50%" valign="top" style="padding:18px 12px 18px 0;">
+                          <p style="margin:0 0 7px;font-size:10px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;color:#98752c;">From</p>
+                          <p style="margin:0;font-size:14px;line-height:1.6;color:#171717;">${escapeHtml(name)}</p>
+                          <p style="margin:2px 0 0;font-size:13px;line-height:1.6;word-break:break-word;">
+                            <a href="mailto:${escapeHtml(email)}" style="color:#625c52;text-decoration:underline;">${escapeHtml(email)}</a>
+                          </p>
+                        </td>
+                        <td width="50%" valign="top" style="padding:18px 0 18px 12px;">
+                          <p style="margin:0 0 7px;font-size:10px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;color:#98752c;">Subject</p>
+                          <p style="margin:0;font-size:14px;line-height:1.6;color:#171717;word-break:break-word;">${escapeHtml(safeSubject || '(No subject)')}</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:28px 36px 30px;">
+                    <p style="margin:0 0 12px;font-size:10px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;color:#98752c;">Their message</p>
+                    <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:18px;line-height:1.75;color:#29251f;white-space:pre-wrap;overflow-wrap:anywhere;">${escapeHtml(message)}</p>
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin-top:26px;">
+                      <tr>
+                        <td bgcolor="#171717" style="border-radius:3px;">
+                          <a href="mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(`Re: ${safeSubject}`)}" style="display:inline-block;padding:13px 22px;font-size:13px;font-weight:bold;color:#ffffff;text-decoration:none;">
+                            Reply to ${escapeHtml(name)}
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:18px 36px;border-top:1px solid #d8d0c1;">
+                    <p style="margin:0;font-size:11px;line-height:1.6;color:#8a8378;">
+                      Sent from the contact form on ${escapeHtml(storeName || 'Your Store')}.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
     </html>
   `;
 
-  const text = `New contact message from ${name} (${email})\nSubject: ${subject}\n\n${message}`;
+  const text = `A NOTE FROM YOUR CUSTOMER\n${storeName || 'Your Store'}\n\nNew contact message\n\nFROM\n${name} <${email}>\n\nSUBJECT\n${safeSubject}\n\nTHEIR MESSAGE\n${message}\n\nReply directly to this email to contact ${name}.`;
 
-  return sendEmail({ to: to || process.env.CONTACT_EMAIL || process.env.EMAIL_USER, subject: `New Contact Message: ${subject || 'From website'}`, html, text });
+  return sendEmail({
+    to: recipient,
+    replyTo: email,
+    subject: `New Contact Message: ${safeSubject}`,
+    html,
+    text,
+  });
 };
 
 // Password Reset Email

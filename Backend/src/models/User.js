@@ -17,12 +17,12 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      minlength: [6, 'Password must be at least 6 characters'],
+      minlength: [10, 'Password must be at least 10 characters'],
       select: false,
     },
     role: {
       type: String,
-      enum: ['admin', 'user'],
+      enum: ['admin', 'user', 'manager', 'staff'],
       default: 'user',
     },
     avatar: {
@@ -37,8 +37,10 @@ const userSchema = new mongoose.Schema(
     resetPasswordToken: { type: String },
     resetPasswordExpire: { type: Date },
 
-    // Refresh token
+    // Refresh token and session invalidation
     refreshToken: { type: String, select: false },
+    sessionVersion: { type: Number, default: 1 },
+    passwordChangedAt: { type: Date, default: null },
 
     // Wishlist
     wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],

@@ -2,7 +2,7 @@ import ContentPage from '../models/ContentPage.js';
 import cloudinary from '../config/cloudinary.js';
 
 const PAGE_SLUGS = new Set([
-  'about', 'contact', 'faq', 'track-order', 'shipping',
+  'contact', 'faq', 'track-order', 'shipping',
   'returns', 'refund-policy', 'privacy-policy', 'terms',
 ]);
 

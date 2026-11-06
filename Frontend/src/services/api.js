@@ -30,6 +30,7 @@ export const productAPI = {
   getAll:         (params)        => api.get('/products', { params }),
   getOne:         (id)            => api.get(`/products/${id}`),
   create:         (data)          => api.post('/products', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  bulkImport:     (items)         => api.post('/products/bulk-import', { items }),
   update:         (id, data)      => api.put(`/products/${id}`, data, { headers: { 'Content-Type': 'multipart/form-data' } }),
   delete:         (id)            => api.delete(`/products/${id}`),
   restore:        (id)            => api.patch(`/products/${id}/restore`),
@@ -42,6 +43,7 @@ export const categoryAPI = {
   getAll:   (params)     => api.get('/categories', { params }),
   getOne:   (id)         => api.get(`/categories/${id}`),
   create:   (data)       => api.post('/categories', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  bulkImport: (items)    => api.post('/categories/bulk-import', { items }),
   update:   (id, data)   => api.put(`/categories/${id}`, data, { headers: { 'Content-Type': 'multipart/form-data' } }),
   delete:   (id)         => api.delete(`/categories/${id}`),
 };

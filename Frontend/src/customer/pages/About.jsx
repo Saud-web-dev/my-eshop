@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
@@ -36,7 +37,14 @@ const About = () => {
   const stats = s.aboutStats?.length ? s.aboutStats : DEFAULT_STATS;
 
   // Second image determined by admin in settings.aboutImage, with fallbacks
-  const secondPicture = s.aboutImage?.url || s.heroImages?.[0]?.url || s.logo?.url;
+  const pictureCandidates = [s.aboutImage?.url, s.heroImages?.[0]?.url, s.logo?.url].filter(Boolean);
+  const [pictureIndex, setPictureIndex] = useState(0);
+  const pictureCandidatesKey = pictureCandidates.join('|');
+  const secondPicture = pictureCandidates[pictureIndex];
+
+  useEffect(() => {
+    setPictureIndex(0);
+  }, [pictureCandidatesKey]);
 
   const socials = [
     { icon: <FaFacebook />, href: s.facebook, label: 'Facebook', color: '#1877f2' },
@@ -60,10 +68,11 @@ const About = () => {
           <img
             src={s.heroImages[0].url}
             alt={storeName}
-            className="absolute inset-0 w-full h-full object-cover opacity-20"
+            className="absolute inset-0 w-full h-full object-cover opacity-45"
+            onError={e => { e.currentTarget.style.display = 'none'; }}
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-900 via-primary-900/95 to-accent/20" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-900/75 via-primary-900/65 to-accent/20" />
         <div className="relative container-custom text-center">
           <motion.div initial="hidden" animate="visible" variants={staggerContainer}>
             {s.logo?.url ? (
@@ -156,12 +165,15 @@ const About = () => {
                     src={secondPicture}
                     alt={storeName}
                     className="relative rounded-3xl shadow-card-hover w-full h-[380px] object-cover"
+                    onError={() => setPictureIndex(index => Math.min(index + 1, pictureCandidates.length))}
                   />
                 ) : (
                   <div className="relative rounded-3xl bg-primary-900 w-full h-[380px] flex items-center justify-center overflow-hidden">
                     <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-accent/20 blur-2xl" />
                     <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-primary-500/20 blur-2xl" />
-                    <MdAutoAwesome size={96} className="text-accent/60 relative" />
+                    <p className="relative max-w-xs px-6 text-center text-sm text-primary-300">
+                      Add an About Page image in Admin Settings to display your store photo here.
+                    </p>
                   </div>
                 )}
                 <div className="absolute bottom-6 left-6 bg-surface/95 backdrop-blur border border-border rounded-2xl px-5 py-4 shadow-card-hover">

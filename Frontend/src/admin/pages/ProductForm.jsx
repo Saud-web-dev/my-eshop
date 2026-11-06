@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
@@ -44,7 +44,7 @@ const ProductForm = () => {
       reset({
         name: product.name,
         price: product.price,
-        salePrice: product.salePrice || '',
+        salePrice: product.salePrice ?? '',
         stock: product.stock,
         category: product.category?._id || '',
         description: product.description || '',
@@ -52,10 +52,13 @@ const ProductForm = () => {
         sku: product.sku || '',
         brand: product.brand || '',
         tags: product.tags?.join(', ') || '',
-        isFeatured: product.isFeatured,
-        isTrending: product.isTrending,
-        isBestSeller: product.isBestSeller,
-        isNewArrival: product.isNewArrival,
+        isFeatured: product.isFeatured ?? false,
+        isTrending: product.isTrending ?? false,
+        isBestSeller: product.isBestSeller ?? false,
+        isNewArrival: product.isNewArrival ?? false,
+        isFlashSale: product.isFlashSale ?? false,
+        metaTitle: product.metaTitle || '',
+        metaDescription: product.metaDescription || '',
       });
       setExistingImages(product.images || []);
     }
@@ -74,7 +77,7 @@ const ProductForm = () => {
   const onSubmit = (data) => {
     const fd = new FormData();
     Object.entries(data).forEach(([k, v]) => {
-      if (v !== undefined && v !== null && v !== '') fd.append(k, v);
+      if (v !== undefined) fd.append(k, v === null ? '' : v);
     });
     newImages.forEach(f => fd.append('images', f));
     mutation.mutate(fd);

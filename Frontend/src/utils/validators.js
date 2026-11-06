@@ -27,14 +27,23 @@ export const resetPasswordSchema = z.object({
 });
 
 export const productSchema = z.object({
-  name:        z.string().min(2, 'Product name is required'),
-  price:       z.coerce.number().min(0, 'Price must be a positive number'),
-  salePrice:   z.coerce.number().min(0).optional().nullable(),
-  stock:       z.coerce.number().min(0),
-  category:    z.string().min(1, 'Category is required'),
-  description: z.string().optional(),
-  sku:         z.string().optional(),
-  brand:       z.string().optional(),
+  name:             z.string().min(2, 'Product name is required'),
+  price:            z.coerce.number().min(0, 'Price must be a positive number'),
+  salePrice:        z.preprocess(value => value === '' ? null : value, z.coerce.number().min(0).nullable().optional()),
+  stock:            z.coerce.number().min(0),
+  category:         z.string().min(1, 'Category is required'),
+  description:      z.string().optional(),
+  shortDescription: z.string().optional(),
+  sku:              z.string().optional(),
+  brand:            z.string().optional(),
+  tags:             z.string().optional(),
+  isFeatured:       z.boolean().optional(),
+  isTrending:       z.boolean().optional(),
+  isBestSeller:     z.boolean().optional(),
+  isNewArrival:     z.boolean().optional(),
+  isFlashSale:      z.boolean().optional(),
+  metaTitle:        z.string().optional(),
+  metaDescription:  z.string().optional(),
 });
 
 export const categorySchema = z.object({

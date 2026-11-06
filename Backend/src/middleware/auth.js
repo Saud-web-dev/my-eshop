@@ -1,7 +1,16 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
-// ─── Verify access token ──────────────────────────────────────────────────────
+export const ADMIN_ROLES = ['admin', 'manager', 'staff'];
+
+const verifyToken = (token) => {
+  return jwt.verify(token, process.env.JWT_SECRET, {
+    algorithms: ['HS256'],
+    issuer: 'zahoor-fragrance',
+    audience: 'zahoor-fragrance-users',
+  });
+};
+
 export const protect = async (req, res, next) => {
   try {
     let token;
@@ -16,7 +25,7 @@ export const protect = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Not authenticated. Please log in.' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = verifyToken(token);
     const user = await User.findById(decoded.id);
 
     if (!user) {
@@ -24,6 +33,12 @@ export const protect = async (req, res, next) => {
     }
     if (!user.isActive) {
       return res.status(401).json({ success: false, message: 'Your account has been deactivated.' });
+    }
+    if (typeof decoded.sessionVersion !== 'number' || user.sessionVersion !== decoded.sessionVersion) {
+      return res.status(401).json({ success: false, message: 'Session expired. Please log in again.' });
+    }
+    if (user.passwordChangedAt && decoded.iat && user.passwordChangedAt.getTime() > decoded.iat * 1000) {
+      return res.status(401).json({ success: false, message: 'Session expired. Please log in again.' });
     }
 
     req.user = user;
@@ -36,16 +51,18 @@ export const protect = async (req, res, next) => {
   }
 };
 
-// ─── Role-based authorization ─────────────────────────────────────────────────
-export const authorize = (...roles) => (req, res, next) => {
-  if (!roles.includes(req.user.role)) {
-    return res.status(403).json({
-      success: false,
-      message: `Access denied. Required role: ${roles.join(' or ')}`,
-    });
-  }
-  next();
+export const authorize = (...roles) => {
+  const allowedRoles = roles.flatMap((role) => (Array.isArray(role) ? role : [role])).filter(Boolean);
+
+  return (req, res, next) => {
+    if (!req.user || !allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: `Access denied. Required role: ${allowedRoles.join(' or ')}`,
+      });
+    }
+    next();
+  };
 };
 
-// Shorthand for admin-only routes
-export const adminOnly = [protect, authorize('admin')];
+export const adminOnly = [protect, authorize(ADMIN_ROLES)];

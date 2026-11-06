@@ -4,6 +4,27 @@ import Coupon from '../models/Coupon.js';
 import User from '../models/User.js';
 import { sendOrderConfirmationEmail } from '../services/emailService.js';
 
+const escapeRegex = (value = '') => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const VALID_ORDER_TRANSITIONS = {
+  pending: ['confirmed', 'cancelled'],
+  confirmed: ['processing', 'cancelled'],
+  processing: ['shipped', 'cancelled'],
+  shipped: ['out_for_delivery', 'cancelled'],
+  out_for_delivery: ['delivered', 'cancelled'],
+  delivered: ['return_requested', 'refunded'],
+  return_requested: ['returned', 'refunded'],
+  returned: ['refunded'],
+  cancelled: [],
+  refunded: [],
+};
+
+const validateOrderStatusTransition = (currentStatus, nextStatus) => {
+  if (!nextStatus || nextStatus === currentStatus) return true;
+  const allowedStates = VALID_ORDER_TRANSITIONS[currentStatus] || [];
+  return allowedStates.includes(nextStatus);
+};
+
 // ─── CREATE ORDER ────────────────────────────────────────────────────────────
 export const createOrder = async (req, res) => {
   try {
@@ -126,7 +147,7 @@ export const trackOrder = async (req, res) => {
 
     const query = /^[0-9a-fA-F]{24}$/.test(orderId)
       ? { _id: orderId }
-      : { orderNumber: { $regex: `^${orderId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } };
+      : { orderNumber: { $regex: `^${escapeRegex(orderId)}$`, $options: 'i' } };
 
     const order = await Order.findOne(query)
       .populate('user', 'email')
@@ -214,7 +235,7 @@ export const adminGetAllOrders = async (req, res) => {
     const { page = 1, limit = 20, status, search, startDate, endDate } = req.query;
     const filter = {};
     if (status) filter.status = status;
-    if (search) filter.orderNumber = { $regex: search, $options: 'i' };
+    if (search) filter.orderNumber = { $regex: escapeRegex(search), $options: 'i' };
     if (startDate || endDate) {
       filter.createdAt = {};
       if (startDate) filter.createdAt.$gte = new Date(startDate);
@@ -247,6 +268,16 @@ export const updateOrderStatus = async (req, res) => {
     const { status, note, trackingNumber, courier } = req.body;
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
+
+    if (!status) {
+      return res.status(400).json({ success: false, message: 'Status is required.' });
+    }
+    if (!validateOrderStatusTransition(order.status, status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid status transition from ${order.status} to ${status}.`,
+      });
+    }
 
     order.status = status;
     order.statusHistory.push({ status, note, updatedBy: req.user._id });

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -eu
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "gitleaks is required but not installed. Install it with:"
+  echo "  brew install gitleaks  OR  go install github.com/gitleaks/gitleaks/v8@latest"
+  exit 1
+fi
+
+gitleaks protect --staged --redact

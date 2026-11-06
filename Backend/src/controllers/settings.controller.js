@@ -1,16 +1,29 @@
 import Settings from '../models/Settings.js';
 import cloudinary from '../config/cloudinary.js';
 import { sendContactEmail } from '../services/emailService.js';
+import { getPublicUploadUrl } from '../middleware/multer.js';
 
 // ─── SEND CONTACT MESSAGE (public) ───────────────────────────────────────────
 export const sendContactMessage = async (req, res) => {
   try {
-    const { name, email, subject, message } = req.body;
+    const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
+    const email = typeof req.body.email === 'string' ? req.body.email.trim() : '';
+    const subject = typeof req.body.subject === 'string' ? req.body.subject.trim() : '';
+    const message = typeof req.body.message === 'string' ? req.body.message.trim() : '';
 
-    if (!name || !email || !message)
-      return res.status(400).json({ success: false, message: 'Name, email and message are required.' });
+    if (!name || !email || !subject || !message)
+      return res.status(400).json({ success: false, message: 'Name, email, subject and message are required.' });
+    if (name.length > 120 || subject.length > 200 || message.length > 5000
+      || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ success: false, message: 'Please enter valid contact details and keep the message under 5000 characters.' });
+    }
 
     const settings = await Settings.findOne();
+    const recipient = settings?.email?.trim() || process.env.CONTACT_EMAIL?.trim() || process.env.EMAIL_USER?.trim();
+    if (!recipient) {
+      console.error('Contact form email could not be sent: no recipient is configured.');
+      return res.status(503).json({ success: false, message: 'The store email is not configured. Please contact the store by phone.' });
+    }
 
     const result = await sendContactEmail({
       name,
@@ -18,14 +31,17 @@ export const sendContactMessage = async (req, res) => {
       subject,
       message,
       storeName: settings?.storeName || 'Your Store',
-      to: settings?.email,
+      to: recipient,
     });
 
-    if (!result.success)
-      return res.status(500).json({ success: false, message: 'Email service is not configured. Please contact the store directly.' });
+    if (!result.success) {
+      console.error('Contact form email delivery failed:', result.error || 'Unknown email error');
+      return res.status(503).json({ success: false, message: 'We could not deliver your message by email. Please try again later or contact the store by phone.' });
+    }
 
     res.status(200).json({ success: true, message: 'Your message has been sent. We will get back to you soon!' });
   } catch (error) {
+    console.error('Contact form submission failed:', error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -76,7 +92,7 @@ export const uploadLogo = async (req, res) => {
       await cloudinary.uploader.destroy(settings.logo.publicId).catch(() => {});
     }
 
-    settings.logo = { url: req.file.path, publicId: req.file.filename };
+    settings.logo = { url: getPublicUploadUrl(req, req.file), publicId: req.file.filename };
     await settings.save();
     res.status(200).json({ success: true, data: settings.logo });
   } catch (error) {
@@ -93,7 +109,7 @@ export const uploadHeroImage = async (req, res) => {
     if (!settings) settings = new Settings();
 
     const newImage = {
-      url: req.file.path,
+      url: getPublicUploadUrl(req, req.file),
       publicId: req.file.filename,
       alt: req.body.alt || '',
       link: req.body.link || '',
@@ -135,7 +151,7 @@ export const uploadBanner = async (req, res) => {
     let settings = await Settings.findOne();
     if (!settings) settings = new Settings();
 
-    const newBanners = req.files.map(f => ({ url: f.path, publicId: f.filename, alt: '' }));
+    const newBanners = req.files.map(f => ({ url: getPublicUploadUrl(req, f), publicId: f.filename, alt: '' }));
     settings.bannerImages = [...(settings.bannerImages || []), ...newBanners];
     await settings.save();
     res.status(200).json({ success: true, data: settings.bannerImages });
@@ -156,7 +172,7 @@ export const uploadAboutImage = async (req, res) => {
       await cloudinary.uploader.destroy(settings.aboutImage.publicId).catch(() => {});
     }
 
-    settings.aboutImage = { url: req.file.path, publicId: req.file.filename };
+    settings.aboutImage = { url: getPublicUploadUrl(req, req.file), publicId: req.file.filename };
     await settings.save();
     res.status(200).json({ success: true, data: settings.aboutImage, message: 'About image updated.' });
   } catch (error) {

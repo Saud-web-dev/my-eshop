@@ -9,7 +9,7 @@ import { protect, authorize } from '../middleware/auth.js';
 const router = Router();
 
 // All analytics routes — admin only
-router.use(protect, authorize('admin'));
+router.use(protect, authorize('admin', 'manager', 'staff'));
 
 router.get('/dashboard',         getDashboardStats);
 router.get('/revenue-chart',     getRevenueChart);

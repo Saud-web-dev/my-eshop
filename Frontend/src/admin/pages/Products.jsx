@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
@@ -6,19 +6,23 @@ import { productAPI } from '@services/api';
 import { formatCurrency } from '@utils/helpers';
 import { StockBadge } from '@components/ui/Badge';
 import Pagination from '@components/ui/Pagination';
-import { ConfirmDialog } from '@components/ui/Modal';
+import Modal, { ConfirmDialog } from '@components/ui/Modal';
 import { TableRowSkeleton } from '@components/ui/SkeletonLoader';
 import toast from 'react-hot-toast';
 import useDebounce from '@hooks/useDebounce';
+import { downloadCsvTemplate, parseCsv } from '@utils/csv';
 import {
-  MdAdd, MdEdit, MdDelete, MdSearch, MdRefresh,
-  MdToggleOn, MdToggleOff, MdRestoreFromTrash,
+  MdAdd, MdEdit, MdDelete, MdSearch,
+  MdToggleOn, MdToggleOff, MdRestoreFromTrash, MdUploadFile,
 } from 'react-icons/md';
 
 const Products = () => {
   const [params, setParams] = useSearchParams();
   const [search, setSearch] = useState(params.get('search') || '');
   const [confirmId, setConfirmId] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importReport, setImportReport] = useState(null);
+  const importInput = useRef(null);
   const debouncedSearch = useDebounce(search, 400);
   const qc = useQueryClient();
 
@@ -60,6 +64,35 @@ const Products = () => {
     },
   });
 
+  const handleImport = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (file.size > 1024 * 1024) {
+      toast.error('CSV file must be 1 MB or smaller.');
+      return;
+    }
+
+    setImporting(true);
+    try {
+      const items = parseCsv(await file.text());
+      if (items.length > 50) throw new Error('Import a maximum of 50 products per CSV.');
+      const { data } = await productAPI.bulkImport(items);
+      const report = data.data;
+      qc.invalidateQueries({ queryKey: ['admin-products'] });
+      qc.invalidateQueries({ queryKey: ['shop-products'] });
+      qc.invalidateQueries({ queryKey: ['home-all-products'] });
+      qc.invalidateQueries({ queryKey: ['featured-products'] });
+      qc.invalidateQueries({ queryKey: ['new-arrivals'] });
+      setImportReport(report);
+      toast.success(`${report.createdCount} product(s) imported${report.failedCount ? `; ${report.failedCount} row(s) need attention` : ''}.`);
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message || 'Could not import CSV.');
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <>
       <Helmet><title>Products – Admin</title></Helmet>
@@ -71,10 +104,26 @@ const Products = () => {
             <h1 className="text-2xl font-bold text-text-primary">Products</h1>
             {pagination && <p className="text-sm text-text-muted">{pagination.total} total products</p>}
           </div>
-          <Link to="/admin/products/new" className="btn-primary flex items-center gap-2 self-start">
-            <MdAdd size={18} /> Add Product
-          </Link>
+          <div className="flex items-center gap-2 flex-wrap">
+            <input ref={importInput} type="file" accept=".csv,text/csv" className="hidden" onChange={handleImport} />
+            <button type="button" className="btn-outline flex items-center gap-2 self-start"
+              onClick={() => importInput.current?.click()} disabled={importing}>
+              <MdUploadFile size={18} /> {importing ? 'Importing…' : 'Import CSV'}
+            </button>
+            <button type="button" className="text-sm text-text-secondary hover:text-accent"
+              onClick={() => downloadCsvTemplate('products-template.csv',
+                ['name', 'category', 'price', 'salePrice', 'stock', 'brand', 'sku', 'description', 'shortDescription', 'tags', 'isFeatured', 'isNewArrival', 'isBestSeller', 'isActive'],
+                ['Example Fragrance', 'Fragrance', '2500', '2200', '10', 'Brand', 'SKU-001', 'Product description', 'Short description', 'fresh,floral', 'false', 'true', 'false', 'true'])}>
+              Download template
+            </button>
+            <Link to="/admin/products/new" className="btn-primary flex items-center gap-2 self-start">
+              <MdAdd size={18} /> Add Product
+            </Link>
+          </div>
         </div>
+        <p className="text-xs text-text-muted">
+          CSV import accepts up to 50 rows. Import categories first; each product must reference an existing category name or ID. Add product images from the product editor after import.
+        </p>
 
         {/* Filters */}
         <div className="bg-surface border border-border rounded-card p-4 flex flex-wrap gap-3 items-center">
@@ -185,6 +234,25 @@ const Products = () => {
         confirmText="Delete"
         loading={deleteMutation.isPending}
       />
+
+      <Modal open={!!importReport} onClose={() => setImportReport(null)} title="Product import report" size="lg">
+        {importReport && (
+          <div className="space-y-4">
+            <p className="text-sm text-text-secondary">
+              Imported {importReport.createdCount}; failed {importReport.failedCount}. Product images are not imported from CSV—add them from each product editor.
+            </p>
+            {importReport.errors?.length > 0 && (
+              <div className="max-h-64 overflow-y-auto rounded-lg border border-border divide-y divide-border">
+                {importReport.errors.map(error => (
+                  <p key={`${error.row}-${error.message}`} className="px-3 py-2 text-sm text-red-600">
+                    Row {error.row}: {error.message}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </>
   );
 };
