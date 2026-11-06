@@ -131,7 +131,8 @@ app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
     const cleanOrigin = origin.replace(/\/$/, '');
-    if (allowedOrigins.includes(cleanOrigin) || allowedOrigins.includes(origin)) {
+    const isVercelPreviewOrigin = /^https:\/\/my-eshop-125-[a-z0-9-]+-saud7\.vercel\.app$/i.test(cleanOrigin);
+    if (allowedOrigins.includes(cleanOrigin) || allowedOrigins.includes(origin) || isVercelPreviewOrigin) {
       return callback(null, true);
     }
     callback(new Error('Not allowed by CORS'));
