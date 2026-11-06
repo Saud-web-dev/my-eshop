@@ -1,17 +1,7 @@
 import multer from 'multer';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import { v2 as cloudinary } from 'cloudinary';
 import fs from 'fs';
 import path from 'path';
-
-/**
- * We use a TWO-STEP approach:
- *  1. multer stores the file on disk (temp)
- *  2. After upload, a middleware uploads to Cloudinary and removes the temp file
- *
- * This avoids CloudinaryStorage crashing at module load time when env vars are missing.
- * If Cloudinary IS configured, we use CloudinaryStorage directly for better performance.
- */
 
 const CLOUDINARY_READY = !!(
   process.env.CLOUDINARY_CLOUD_NAME &&
@@ -24,6 +14,45 @@ const imageFilter = (req, file, cb) => {
   if (file.mimetype.startsWith('image/')) cb(null, true);
   else cb(new Error('Only image files are allowed.'), false);
 };
+
+const createCloudinaryStorage = (folder) => ({
+  _handleFile(req, file, callback) {
+    const publicId = `${Date.now()}-${path.parse(file.originalname).name.replace(/\s+/g, '-')}`;
+    let completed = false;
+    const finish = (error, fileInfo) => {
+      if (completed) return;
+      completed = true;
+      callback(error, fileInfo);
+    };
+
+    const uploadStream = cloudinary.uploader.upload_stream({
+      folder: `store/${folder}`,
+      allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+      transformation: [{ quality: 'auto', fetch_format: 'auto' }],
+      public_id: publicId,
+    }, (error, result) => {
+      if (error) return finish(error);
+      finish(null, {
+        path: result.secure_url,
+        filename: result.public_id,
+        size: result.bytes,
+      });
+    });
+
+    uploadStream.on('error', finish);
+    file.stream.on('error', finish);
+    file.stream.pipe(uploadStream);
+  },
+  _removeFile(req, file, callback) {
+    cloudinary.uploader.destroy(file.filename, (error) => {
+      if (error) return callback(error);
+      delete file.path;
+      delete file.filename;
+      delete file.size;
+      callback(null);
+    });
+  },
+});
 
 export const getPublicUploadUrl = (req, file) => {
   if (/^https?:\/\//i.test(file.path)) return file.path;
@@ -43,16 +72,7 @@ const makeUpload = (folder, maxSize = 5 * 1024 * 1024, maxCount = null) => {
   let storage;
 
   if (CLOUDINARY_READY) {
-    // Direct Cloudinary upload (production-ready)
-    storage = new CloudinaryStorage({
-      cloudinary,
-      params: async (req, file) => ({
-        folder: `store/${folder}`,
-        allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
-        transformation: [{ quality: 'auto', fetch_format: 'auto' }],
-        public_id: `${Date.now()}-${path.parse(file.originalname).name.replace(/\s+/g, '-')}`,
-      }),
-    });
+    storage = createCloudinaryStorage(folder);
   } else {
     // Fallback: local disk storage when Cloudinary is not configured
     const uploadDir = path.join(process.cwd(), 'uploads', folder);
