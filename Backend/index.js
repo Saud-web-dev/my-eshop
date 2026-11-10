@@ -103,7 +103,7 @@ const validateEnvironment = () => {
 };
 
 validateEnvironment();
-connectDB();
+await connectDB();
 
 const app = express();
 app.disable('x-powered-by');
