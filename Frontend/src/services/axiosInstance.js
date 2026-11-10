@@ -1,7 +1,14 @@
 import axios from 'axios';
 
+const apiBaseUrl = import.meta.env.VITE_API_URL;
+const isLocalApiUrl = /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?(?:\/|$)/i.test(apiBaseUrl || '');
+
+if (import.meta.env.PROD && (!apiBaseUrl || isLocalApiUrl)) {
+  throw new Error('Set VITE_API_URL to the deployed backend API URL in production; localhost is not valid.');
+}
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://my-eshop-sigma.vercel.app/api',
+  baseURL: apiBaseUrl || '/api',
   withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
 });

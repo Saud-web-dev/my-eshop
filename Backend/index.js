@@ -37,7 +37,7 @@ const requiredEnvKeys = [
   'ADMIN_SETUP_KEY',
 ];
 
-const requiredProductionEnvKeys = [...requiredEnvKeys, 'EMAIL_USER', 'EMAIL_PASS'];
+const requiredProductionEnvKeys = [...requiredEnvKeys, 'EMAIL_USER', 'EMAIL_PASS', 'CLIENT_URL'];
 
 const devDefaults = {
   MONGO_URI: 'mongodb://localhost:27017/zahoor-fragrance-dev',
@@ -123,10 +123,13 @@ app.use(helmet({
 }));
 
 const allowedOrigins = [
-  process.env.CLIENT_URL?.replace(/\/$/, ''),
+  ...(process.env.CLIENT_URL || '')
+    .split(',')
+    .map((origin) => origin.trim().replace(/\/+$/, ''))
+    .filter(Boolean),
   'http://localhost:5173',
   'http://localhost:3000',
-].filter(Boolean);
+];
 
 app.use(cors({
   origin: (origin, callback) => {
